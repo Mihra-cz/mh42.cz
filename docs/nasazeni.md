@@ -1,8 +1,43 @@
 # Nasazení mh42.cz na WEDOS
 
-Stav k 2026-09-18: **v1 nasazená a technicky uzavřená** (varianta A2).
+Stav k 2026-09-18: **v1.1 nasazená** (delta nad v1, varianta A2).
 Nasazení provádí autor ručně přes FTP a administraci WEDOS / Cloudflare;
 kontroly po nahrání spouští Claude přes HTTPS (`tools/overeni-nasazeni.py`).
+
+## Stav produkce v1.1
+
+| | |
+|---|---|
+| Nasazeno | 2026-09-18 |
+| Produkční commit | `af4a95b207aac2b38f53ecd33aee1a8bcd5e59cf` (mh42.cz v1.1 – poznámky a web app manifest) |
+| Způsob | delta deployment varianty A2 – nahrané jen soubory změněné proti v1 |
+| Rozsah | 24 produkčních souborů (14 nových, 10 změněných), nic se nemazalo |
+| `config/asset-versions.php` | součástí nasazení (nové otisky změněných CSS) |
+| Cloudflare purge | nebyl potřeba – změněné CSS mají novou adresu `?v=` |
+| Balíček v1.1 | `dist/mh42-2026-09-18-1856/` – pořadí nahrávání a rollback v `NASAZENI-v1.1.md` |
+| Rollback základ | balíček v1 `dist/mh42-v1-2026-09-18-1636/` – zůstává beze změny |
+
+Balíčky v `dist/` jsou jen lokálně, nejsou v Gitu. Hosting a nastavení Cloudflare
+se proti v1 nezměnily – tabulka v sekci „Finální stav produkce v1“ platí dál.
+
+**Kontrola:** `tools/overeni-nasazeni.py` → **87 ok, 0 chyb.**
+
+**Vizuální kontrola (headless Chromium):** světlý i tmavý motiv, PCB pozadí, mobilní
+navigace a Poznámky v pořádku; žádný horizontální overflow, žádné chyby v konzoli,
+žádné chyby CSP, žádné externí požadavky prohlížeče, žádné cookies.
+
+**Nově ověřené veřejné části**
+- `/poznamky/`, `/poznamky/mh42-cz-v1/`, `/poznamky/proc-bez-frameworku/`,
+  `/poznamky/schema-ve-dne-pcb-v-noci/`
+- `/feed.atom` – `application/atom+xml`, 3 položky, platné `id`/`title`/`updated`,
+  unikátní `id` položek, odkazy vracejí 200
+- `/manifest.webmanifest` – `application/manifest+json`, `id`, `start_url` i `scope` = `/`
+- ikony `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` (`/assets/img/`) –
+  ověřené proti manifestu, maskable ikona je neprůhledná
+- `sitemap.xml` – 7 veřejných URL, všechny vracejí 200
+
+**Cache:** HTML `no-cache`; CSS/JS/písma rok + `immutable`; obrázky týden; verze
+v adresách (`?v=`) sedí s otiskem obsahu.
 
 ## Finální stav produkce v1
 
@@ -57,7 +92,9 @@ Zástupné názvy: `<FTP_ROOT>` = kořen FTP účtu webhostingu (na WEDOS tvaru
    nikdy „Purge Everything“ jako běžný krok.
 
 Rollback: předchozí balíček v `dist/` nahrát stejným postupem; při chybě 500 z `.htaccess`
-přejmenovat `www/.htaccess` na `.htaccess.off`.
+přejmenovat `www/.htaccess` na `.htaccess.off`. Návrat v1.1 → v1: postup
+v `dist/mh42-2026-09-18-1856/NASAZENI-v1.1.md`, zdrojem je balíček
+`dist/mh42-v1-2026-09-18-1636/`.
 
 ---
 
