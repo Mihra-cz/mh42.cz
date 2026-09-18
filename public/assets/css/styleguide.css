@@ -1,0 +1,43 @@
+/* Jen pro /styleguide/ (vývoj). */
+
+.sg-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 1.5rem 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.sg-swatch {
+  display: block;
+  height: 3rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--line);
+}
+.sg-swatch--bg      { background: var(--bg); }
+.sg-swatch--surface { background: var(--surface); }
+.sg-swatch--text    { background: var(--text); }
+.sg-swatch--muted   { background: var(--muted); }
+.sg-swatch--line    { background: var(--line); }
+.sg-swatch--accent  { background: var(--accent); }
+
+.sg-swatch__name { display: block; font-size: var(--text-meta); }
+
+.sg-swatch__values {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--muted);
+}
+
+.sg-samples { display: grid; gap: 2rem; }
+
+.sg-sample__label {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--muted);
+}
+
+/* Sekce, jejíž obsah nezačíná textem, zarovnat k hornímu okraji. */
+.sg-section--top { align-items: start; }

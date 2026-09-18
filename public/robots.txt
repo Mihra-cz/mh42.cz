@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mh42.cz/sitemap.xml

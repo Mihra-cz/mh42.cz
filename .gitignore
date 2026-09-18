@@ -1,0 +1,15 @@
+# Lokální a tajná konfigurace
+/config/local.php
+# osobní lokální nastavení Claude Code (oprávnění apod.); .claude/launch.json do repa patří
+/.claude/settings.local.json
+
+# Běhová data (cache, přijatá data)
+/var/
+
+# Systémové a dočasné soubory
+.DS_Store
+Thumbs.db
+__pycache__/
+
+# Produkční balíčky a diagnostika (tools/balicek.py)
+/dist/

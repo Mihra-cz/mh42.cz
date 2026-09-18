@@ -1,0 +1,630 @@
+<!doctype html>
+<!--
+  mh42.cz – prototyp variant pozadí PCB nad schváleným prototypem homepage.
+  Není to produkční kód. Všechny texty jsou pracovní obsah.
+-->
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>mh42 · prototyp pozadí PCB</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23a8461a'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' fill='%23f6f5f1' text-anchor='middle'%3E42%3C/text%3E%3C/svg%3E">
+<script>
+  // Uloženou volbu motivu nastavit ještě před vykreslením, aby stránka neproblikla.
+  (function () {
+    try {
+      var t = localStorage.getItem('mh42-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+/* ---------- Tokeny ---------- */
+
+:root {
+  --bg: #f6f5f1;
+  --surface: #eeece6;
+  --text: #1c1c1a;
+  --muted: #5c5a54;
+  --line: #d9d6cc;
+  --accent: #a8461a;
+  color-scheme: light;
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "Noto Sans Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+
+  --text-label: 0.8125rem;   /* popisky sekcí – verzálky */
+  --text-meta: 0.875rem;     /* metadata, patička */
+  --text-body: 1.0625rem;    /* 17 px */
+  --text-term: 1.125rem;
+  --text-lead: clamp(1.375rem, 1.05rem + 1.35vw, 1.875rem);
+
+  --page: 60rem;
+  --measure: 40rem;
+  --gutter: 1rem;
+  --label: 9rem;
+  --col-gap: 2rem;
+}
+
+/* Tmavý motiv: podle systému, pokud uživatel nezvolil jinak … */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121314;
+    --surface: #1b1c1e;
+    --text: #e7e5df;
+    --muted: #9d9a92;
+    --line: #2d2e31;
+    --accent: #f0925a;
+    color-scheme: dark;
+  }
+}
+/* … nebo ručně přepnutý. */
+:root[data-theme="dark"] {
+  --bg: #121314;
+  --surface: #1b1c1e;
+  --text: #e7e5df;
+  --muted: #9d9a92;
+  --line: #2d2e31;
+  --accent: #f0925a;
+  color-scheme: dark;
+}
+
+@media (min-width: 40rem) { :root { --gutter: 1.5rem; } }
+@media (min-width: 64rem) { :root { --gutter: 2rem; --label: 11rem; --col-gap: 3rem; } }
+
+/* ---------- Základ ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, p, ul, dl, dd { margin: 0; }
+
+p, dd, li { text-wrap: pretty; }
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  transition: color 0.12s, text-decoration-color 0.12s;
+}
+a:hover { color: var(--accent); text-decoration-color: currentColor; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+::selection { background: var(--accent); color: var(--bg); }
+
+.ext::after { content: "\2197"; content: "\2197" / ""; margin-left: 0.2em; }
+
+.wrap {
+  width: min(100% - 2 * var(--gutter), var(--page));
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: -3rem;
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--text-meta);
+}
+.skip-link:focus { top: 0.5rem; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Pruh prototypu (jen pro posouzení, v produkci nebude) ---------- */
+
+.proto-note {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  padding-block: 0.5rem;
+}
+.proto-note strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Hlavička ---------- */
+
+.site-header { border-bottom: 1px solid var(--line); }
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.75rem;
+  min-height: 4rem;
+}
+
+.wordmark {
+  margin-right: auto;
+  padding-block: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+.wordmark span { color: var(--accent); }
+.wordmark:hover { color: inherit; }
+
+.nav ul {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+.nav a {
+  display: block;
+  padding: 0.625rem 0.5rem;
+  line-height: 1.5;
+  font-size: 1rem;
+  text-decoration: none;
+}
+.nav a:hover,
+.nav a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.4em;
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: -0.75rem;   /* opticky zarovnat ikonu s pravým okrajem */
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.theme-toggle[hidden] { display: none; }
+.theme-toggle:hover { color: var(--text); background: var(--surface); }
+
+/* ---------- Úvod ---------- */
+
+.intro { padding-block: 2.5rem 2.75rem; }
+
+.lead {
+  max-width: 32ch;
+  font-size: var(--text-lead);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.intro__text {
+  max-width: 36rem;
+  margin-top: 1.25rem;
+  color: var(--muted);
+}
+
+.intro__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 1.25rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+/* ---------- Sekce „technického listu“ ---------- */
+
+.section {
+  position: relative;
+  border-top: 1px solid var(--line);
+  padding-block: 2rem 2.5rem;
+}
+/* krátký akcentní úsek na začátku každé dělicí linky */
+.section::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 1.5rem;
+  height: 2px;
+  background: var(--accent);
+}
+
+.section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.section__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.section__meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.section__meta time { white-space: nowrap; }
+
+.section__body { max-width: var(--measure); }
+
+/* Čemu se věnuji */
+.topics { display: grid; gap: 1.75rem; }
+.topic dt {
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+.topic dd { margin-top: 0.3rem; color: var(--muted); }
+
+.more {
+  margin-left: 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+
+/* Teď */
+.now {
+  display: grid;
+  gap: 0.875rem;
+  padding: 0;
+  list-style: none;
+}
+.now li { position: relative; padding-left: 1.5rem; }
+.now li::before {
+  content: "\2013";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+.now__note { display: block; color: var(--muted); }
+
+/* ---------- Patička ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.site-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding-block: 1.5rem 3rem;
+}
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- Dvousloupcový „technický list“ od tabletu výš ---------- */
+
+@media (min-width: 48rem) {
+  .intro,
+  .section,
+  .site-footer__inner {
+    display: grid;
+    grid-template-columns: var(--label) minmax(0, 1fr);
+    column-gap: var(--col-gap);
+    align-items: baseline;
+  }
+  .intro__body,
+  .section__body,
+  .site-footer__links { grid-column: 2; }
+
+  .intro { padding-block: 4rem 3.75rem; }
+  .section { padding-block: 2.75rem 3.25rem; }
+
+  .section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-bottom: 0;
+  }
+  .section__meta time { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+
+/* ---------- PROTOTYP POZADÍ (jen pro výběr varianty) ---------- */
+
+:root {
+  --pcb-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke='%23efdcd6' stroke-width='1'%3E%3Ccircle cx='40.5' cy='90.5' r='3'/%3E%3Cpath d='M43.5 90.5H120.5M160.5 90.5H290.5V140.5M278.5 140.5H302.5M278.5 147.5H302.5M290.5 147.5V190.5'/%3E%3Crect x='120.5' y='84.5' width='40' height='12'/%3E%3Cpath d='M278.5 190.5H302.5M283.5 195.5H297.5M287.5 200.5H293.5'/%3E%3Cpath d='M220.5 90.5V150.5M220.5 190.5V240.5'/%3E%3Crect x='214.5' y='150.5' width='12' height='40'/%3E%3Ccircle cx='220.5' cy='243.5' r='3'/%3E%3Crect x='380.5' y='330.5' width='70' height='48'/%3E%3Cpath d='M409.5 330.5a6 6 0 0 0 12 0'/%3E%3Cpath d='M370.5 342.5H380.5M370.5 366.5H380.5M450.5 354.5H460.5M450.5 366.5H460.5'/%3E%3Cpath d='M380.5 354.5H330.5V280.5'/%3E%3Ccircle cx='330.5' cy='277.5' r='3'/%3E%3Cpath d='M450.5 342.5H510.5V430.5M498.5 430.5H522.5M502.5 435.5H518.5M506.5 440.5H514.5'/%3E%3Ccircle cx='70.5' cy='480.5' r='3'/%3E%3Cpath d='M73.5 480.5H130.5M170.5 480.5H260.5'/%3E%3Crect x='130.5' y='474.5' width='40' height='12'/%3E%3Ccircle cx='263.5' cy='480.5' r='3'/%3E%3Cpath d='M230.5 480.5V510.5M218.5 510.5H242.5M222.5 515.5H238.5M226.5 520.5H234.5'/%3E%3Cpath d='M86.5 330.5h8M90.5 326.5v8M496.5 60.5h8M500.5 56.5v8'/%3E%3C/g%3E%3Cg fill='%23efdcd6'%3E%3Ccircle cx='220.5' cy='90.5' r='2.5'/%3E%3Ccircle cx='230.5' cy='480.5' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
+  --pcb-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke='%23e8cdc5' stroke-width='1'%3E%3Ccircle cx='40.5' cy='90.5' r='3'/%3E%3Cpath d='M43.5 90.5H120.5M160.5 90.5H290.5V140.5M278.5 140.5H302.5M278.5 147.5H302.5M290.5 147.5V190.5'/%3E%3Crect x='120.5' y='84.5' width='40' height='12'/%3E%3Cpath d='M278.5 190.5H302.5M283.5 195.5H297.5M287.5 200.5H293.5'/%3E%3Cpath d='M220.5 90.5V150.5M220.5 190.5V240.5'/%3E%3Crect x='214.5' y='150.5' width='12' height='40'/%3E%3Ccircle cx='220.5' cy='243.5' r='3'/%3E%3Crect x='380.5' y='330.5' width='70' height='48'/%3E%3Cpath d='M409.5 330.5a6 6 0 0 0 12 0'/%3E%3Cpath d='M370.5 342.5H380.5M370.5 366.5H380.5M450.5 354.5H460.5M450.5 366.5H460.5'/%3E%3Cpath d='M380.5 354.5H330.5V280.5'/%3E%3Ccircle cx='330.5' cy='277.5' r='3'/%3E%3Cpath d='M450.5 342.5H510.5V430.5M498.5 430.5H522.5M502.5 435.5H518.5M506.5 440.5H514.5'/%3E%3Ccircle cx='70.5' cy='480.5' r='3'/%3E%3Cpath d='M73.5 480.5H130.5M170.5 480.5H260.5'/%3E%3Crect x='130.5' y='474.5' width='40' height='12'/%3E%3Ccircle cx='263.5' cy='480.5' r='3'/%3E%3Cpath d='M230.5 480.5V510.5M218.5 510.5H242.5M222.5 515.5H238.5M226.5 520.5H234.5'/%3E%3Cpath d='M86.5 330.5h8M90.5 326.5v8M496.5 60.5h8M500.5 56.5v8'/%3E%3Crect x='316.5' y='262.5' width='220' height='190' stroke-dasharray='4 4'/%3E%3Cpath d='M370.5 366.5H352.5M338.5 366.5H300.5V420.5'/%3E%3Cpath d='M352.5 360.5L338.5 366.5L352.5 372.5Z M338.5 360.5V372.5'/%3E%3Ccircle cx='300.5' cy='423.5' r='3'/%3E%3Ccircle cx='377.5' cy='200.5' r='3'/%3E%3Cpath d='M380.5 200.5H420.5M460.5 200.5H520.5V225.5M508.5 225.5H532.5M512.5 230.5H528.5M516.5 235.5H524.5'/%3E%3Crect x='420.5' y='194.5' width='40' height='12'/%3E%3C/g%3E%3Cg fill='%23e8cdc5'%3E%3Ccircle cx='220.5' cy='90.5' r='2.5'/%3E%3Ccircle cx='230.5' cy='480.5' r='2.5'/%3E%3C/g%3E%3C/svg%3E");
+  --pcb-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Cg fill='%23e7cec7'%3E%3Ccircle cx='16.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='16.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='48.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='80.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='112.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='144.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='176.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='208.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='240.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='272.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='304.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='336.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='368.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='400.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='432.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='464.5' cy='496.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='16.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='48.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='80.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='112.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='144.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='176.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='208.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='240.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='272.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='304.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='336.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='368.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='400.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='432.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='464.5' r='1.1'/%3E%3Ccircle cx='496.5' cy='496.5' r='1.1'/%3E%3C/g%3E%3Cg fill='none' stroke='%23eed9d3' stroke-width='1'%3E%3Cpath d='M48.5 112.5H128.5M160.5 112.5H240.5V156.5M228.5 156.5H252.5M228.5 162.5H252.5M240.5 162.5V208.5'/%3E%3Crect x='128.5' y='106.5' width='32' height='12'/%3E%3Crect x='346.5' y='166.5' width='76' height='84'/%3E%3Cpath d='M336.5 176.5H346.5M336.5 208.5H346.5M336.5 240.5H346.5M422.5 176.5H432.5M422.5 208.5H432.5M422.5 240.5H432.5'/%3E%3Cpath d='M304.5 368.5H464.5V448.5M452.5 448.5H476.5M456.5 453.5H472.5M460.5 458.5H468.5'/%3E%3C/g%3E%3Cg fill='%23eed9d3'%3E%3Ccircle cx='48.5' cy='112.5' r='2.4'/%3E%3Ccircle cx='240.5' cy='208.5' r='2.4'/%3E%3Ccircle cx='304.5' cy='368.5' r='2.4'/%3E%3C/g%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --pcb-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5'%3E%3Cg stroke='%231a261e'%3E%3Cpath d='M40 110H150L190 150H300'/%3E%3Cpath d='M40 122H145L185 162H300'/%3E%3Cpath d='M40 134H140L180 174H300'/%3E%3Cpath d='M300 315H250L220 285V230'/%3E%3Cpath d='M300 327H240L200 367H90'/%3E%3Cpath d='M360 315H400L430 285V200'/%3E%3Cpath d='M360 351H470'/%3E%3Cpath d='M90 230V440'/%3E%3Cpath d='M90 283H110M131 283H160L180 263'/%3E%3C/g%3E%3Cg stroke='%23161c18'%3E%3Cpath d='M90 440V490L120 520H260'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%231d2b22'%3E%3Crect x='300' y='312' width='12' height='6' rx='1'/%3E%3Crect x='300' y='324' width='12' height='6' rx='1'/%3E%3Crect x='300' y='336' width='12' height='6' rx='1'/%3E%3Crect x='300' y='348' width='12' height='6' rx='1'/%3E%3Crect x='348' y='312' width='12' height='6' rx='1'/%3E%3Crect x='348' y='324' width='12' height='6' rx='1'/%3E%3Crect x='348' y='336' width='12' height='6' rx='1'/%3E%3Crect x='348' y='348' width='12' height='6' rx='1'/%3E%3Crect x='110' y='279.5' width='7' height='7' rx='1'/%3E%3Crect x='124' y='279.5' width='7' height='7' rx='1'/%3E%3C/g%3E%3Ccircle cx='40' cy='110' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='110' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='122' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='122' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='134' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='134' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='150' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='150' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='162' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='162' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='174' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='174' r='1.8' fill='%23121314'/%3E%3Ccircle cx='220' cy='230' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='220' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='430' cy='200' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='430' cy='200' r='1.8' fill='%23121314'/%3E%3Ccircle cx='470' cy='351' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='470' cy='351' r='1.8' fill='%23121314'/%3E%3Ccircle cx='180' cy='263' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='180' cy='263' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='230' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='90' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='440' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='90' cy='440' r='1.8' fill='%23121314'/%3E%3Ccircle cx='260' cy='520' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='260' cy='520' r='1.8' fill='%23121314'/%3E%3Ccircle cx='150' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='150' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='165' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='165' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='180' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='180' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='490' cy='490' r='10' fill='%231d2b22'/%3E%3Ccircle cx='490' cy='490' r='6' fill='%23121314'/%3E%3Crect x='316.5' y='305.5' width='27' height='51' fill='none' stroke='%231b1d1f' stroke-width='1'/%3E%3Ccircle cx='321' cy='311' r='1.3' fill='%231b1d1f'/%3E%3C/svg%3E");
+  --pcb-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5'%3E%3Cg stroke='%231e3027'%3E%3Cpath d='M40 110H150L190 150H300'/%3E%3Cpath d='M40 122H145L185 162H300'/%3E%3Cpath d='M40 134H140L180 174H300'/%3E%3Cpath d='M300 315H250L220 285V230'/%3E%3Cpath d='M300 327H240L200 367H90'/%3E%3Cpath d='M360 315H400L430 285V200'/%3E%3Cpath d='M360 351H470'/%3E%3Cpath d='M90 230V440'/%3E%3Cpath d='M90 283H110M131 283H160L180 263'/%3E%3Cpath d='M360 339H380V414'/%3E%3Cpath d='M520 230V420M534 230V420'/%3E%3C/g%3E%3Cg stroke='%2318221c'%3E%3Cpath d='M90 440V490L120 520H260'/%3E%3Cpath d='M430 200V130L470 90H520'/%3E%3Cpath d='M220 230V204L250 174H300'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%2322352a'%3E%3Crect x='300' y='312' width='12' height='6' rx='1'/%3E%3Crect x='300' y='324' width='12' height='6' rx='1'/%3E%3Crect x='300' y='336' width='12' height='6' rx='1'/%3E%3Crect x='300' y='348' width='12' height='6' rx='1'/%3E%3Crect x='348' y='312' width='12' height='6' rx='1'/%3E%3Crect x='348' y='324' width='12' height='6' rx='1'/%3E%3Crect x='348' y='336' width='12' height='6' rx='1'/%3E%3Crect x='348' y='348' width='12' height='6' rx='1'/%3E%3Crect x='110' y='279.5' width='7' height='7' rx='1'/%3E%3Crect x='124' y='279.5' width='7' height='7' rx='1'/%3E%3C/g%3E%3Ccircle cx='40' cy='110' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='110' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='122' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='122' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='134' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='134' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='150' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='150' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='162' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='162' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='174' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='174' r='1.8' fill='%23121314'/%3E%3Ccircle cx='220' cy='230' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='220' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='430' cy='200' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='430' cy='200' r='1.8' fill='%23121314'/%3E%3Ccircle cx='470' cy='351' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='470' cy='351' r='1.8' fill='%23121314'/%3E%3Ccircle cx='180' cy='263' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='180' cy='263' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='230' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='90' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='440' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='90' cy='440' r='1.8' fill='%23121314'/%3E%3Ccircle cx='260' cy='520' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='260' cy='520' r='1.8' fill='%23121314'/%3E%3Ccircle cx='150' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='150' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='165' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='165' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='180' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='180' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='490' cy='490' r='10' fill='%2322352a'/%3E%3Ccircle cx='490' cy='490' r='6' fill='%23121314'/%3E%3Ccircle cx='380' cy='420' r='6' fill='%2322352a'/%3E%3Ccircle cx='520' cy='230' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='230' r='1.6' fill='%23121314'/%3E%3Ccircle cx='534' cy='230' r='4' fill='%2322352a'/%3E%3Ccircle cx='534' cy='230' r='1.6' fill='%23121314'/%3E%3Ccircle cx='520' cy='420' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='420' r='1.6' fill='%23121314'/%3E%3Ccircle cx='534' cy='420' r='4' fill='%2322352a'/%3E%3Ccircle cx='534' cy='420' r='1.6' fill='%23121314'/%3E%3Ccircle cx='520' cy='90' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='90' r='1.6' fill='%23121314'/%3E%3Crect x='316.5' y='305.5' width='27' height='51' fill='none' stroke='%23222427' stroke-width='1'/%3E%3Ccircle cx='321' cy='311' r='1.3' fill='%23222427'/%3E%3Crect x='104.5' y='274.5' width='32' height='17' fill='none' stroke='%23222427' stroke-width='1'/%3E%3C/svg%3E");
+  --pcb-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Cg fill='none' stroke='%2318201b' stroke-width='1.2'%3E%3Ccircle cx='16.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='496.0' r='3.2'/%3E%3C/g%3E%3Cg fill='none' stroke='%231e2d23' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M48 112H112M208 112H240V208'/%3E%3Cpath d='M432 176H464V304H304V368H464V464'/%3E%3C/g%3E%3Cg fill='%23213227'%3E%3Ccircle cx='48' cy='112' r='3.6'/%3E%3Ccircle cx='112' cy='112' r='3.6'/%3E%3Ccircle cx='208' cy='112' r='3.6'/%3E%3Ccircle cx='240' cy='208' r='3.6'/%3E%3Ccircle cx='336' cy='176' r='3.6'/%3E%3Ccircle cx='336' cy='208' r='3.6'/%3E%3Ccircle cx='336' cy='240' r='3.6'/%3E%3Ccircle cx='336' cy='272' r='3.6'/%3E%3Ccircle cx='432' cy='176' r='3.6'/%3E%3Ccircle cx='432' cy='208' r='3.6'/%3E%3Ccircle cx='432' cy='240' r='3.6'/%3E%3Ccircle cx='432' cy='272' r='3.6'/%3E%3Ccircle cx='464' cy='464' r='3.6'/%3E%3C/g%3E%3Cg fill='none' stroke='%231d1f21' stroke-width='1'%3E%3Crect x='124.5' y='105.5' width='72' height='13' rx='2'/%3E%3Cpath d='M348.5 162.5H378.5A5.5 5.5 0 0 0 389.5 162.5H419.5V285.5H348.5Z'/%3E%3C/g%3E%3C/svg%3E");
+  }
+}
+:root[data-theme="dark"] {
+  --pcb-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5'%3E%3Cg stroke='%231a261e'%3E%3Cpath d='M40 110H150L190 150H300'/%3E%3Cpath d='M40 122H145L185 162H300'/%3E%3Cpath d='M40 134H140L180 174H300'/%3E%3Cpath d='M300 315H250L220 285V230'/%3E%3Cpath d='M300 327H240L200 367H90'/%3E%3Cpath d='M360 315H400L430 285V200'/%3E%3Cpath d='M360 351H470'/%3E%3Cpath d='M90 230V440'/%3E%3Cpath d='M90 283H110M131 283H160L180 263'/%3E%3C/g%3E%3Cg stroke='%23161c18'%3E%3Cpath d='M90 440V490L120 520H260'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%231d2b22'%3E%3Crect x='300' y='312' width='12' height='6' rx='1'/%3E%3Crect x='300' y='324' width='12' height='6' rx='1'/%3E%3Crect x='300' y='336' width='12' height='6' rx='1'/%3E%3Crect x='300' y='348' width='12' height='6' rx='1'/%3E%3Crect x='348' y='312' width='12' height='6' rx='1'/%3E%3Crect x='348' y='324' width='12' height='6' rx='1'/%3E%3Crect x='348' y='336' width='12' height='6' rx='1'/%3E%3Crect x='348' y='348' width='12' height='6' rx='1'/%3E%3Crect x='110' y='279.5' width='7' height='7' rx='1'/%3E%3Crect x='124' y='279.5' width='7' height='7' rx='1'/%3E%3C/g%3E%3Ccircle cx='40' cy='110' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='110' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='122' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='122' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='134' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='40' cy='134' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='150' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='150' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='162' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='162' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='174' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='300' cy='174' r='1.8' fill='%23121314'/%3E%3Ccircle cx='220' cy='230' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='220' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='430' cy='200' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='430' cy='200' r='1.8' fill='%23121314'/%3E%3Ccircle cx='470' cy='351' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='470' cy='351' r='1.8' fill='%23121314'/%3E%3Ccircle cx='180' cy='263' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='180' cy='263' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='230' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='90' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='440' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='90' cy='440' r='1.8' fill='%23121314'/%3E%3Ccircle cx='260' cy='520' r='4.5' fill='%231d2b22'/%3E%3Ccircle cx='260' cy='520' r='1.8' fill='%23121314'/%3E%3Ccircle cx='150' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='150' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='165' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='165' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='180' cy='440' r='3.5' fill='%231d2b22'/%3E%3Ccircle cx='180' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='490' cy='490' r='10' fill='%231d2b22'/%3E%3Ccircle cx='490' cy='490' r='6' fill='%23121314'/%3E%3Crect x='316.5' y='305.5' width='27' height='51' fill='none' stroke='%231b1d1f' stroke-width='1'/%3E%3Ccircle cx='321' cy='311' r='1.3' fill='%231b1d1f'/%3E%3C/svg%3E");
+  --pcb-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='560' height='560' viewBox='0 0 560 560'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5'%3E%3Cg stroke='%231e3027'%3E%3Cpath d='M40 110H150L190 150H300'/%3E%3Cpath d='M40 122H145L185 162H300'/%3E%3Cpath d='M40 134H140L180 174H300'/%3E%3Cpath d='M300 315H250L220 285V230'/%3E%3Cpath d='M300 327H240L200 367H90'/%3E%3Cpath d='M360 315H400L430 285V200'/%3E%3Cpath d='M360 351H470'/%3E%3Cpath d='M90 230V440'/%3E%3Cpath d='M90 283H110M131 283H160L180 263'/%3E%3Cpath d='M360 339H380V414'/%3E%3Cpath d='M520 230V420M534 230V420'/%3E%3C/g%3E%3Cg stroke='%2318221c'%3E%3Cpath d='M90 440V490L120 520H260'/%3E%3Cpath d='M430 200V130L470 90H520'/%3E%3Cpath d='M220 230V204L250 174H300'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%2322352a'%3E%3Crect x='300' y='312' width='12' height='6' rx='1'/%3E%3Crect x='300' y='324' width='12' height='6' rx='1'/%3E%3Crect x='300' y='336' width='12' height='6' rx='1'/%3E%3Crect x='300' y='348' width='12' height='6' rx='1'/%3E%3Crect x='348' y='312' width='12' height='6' rx='1'/%3E%3Crect x='348' y='324' width='12' height='6' rx='1'/%3E%3Crect x='348' y='336' width='12' height='6' rx='1'/%3E%3Crect x='348' y='348' width='12' height='6' rx='1'/%3E%3Crect x='110' y='279.5' width='7' height='7' rx='1'/%3E%3Crect x='124' y='279.5' width='7' height='7' rx='1'/%3E%3C/g%3E%3Ccircle cx='40' cy='110' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='110' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='122' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='122' r='1.8' fill='%23121314'/%3E%3Ccircle cx='40' cy='134' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='40' cy='134' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='150' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='150' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='162' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='162' r='1.8' fill='%23121314'/%3E%3Ccircle cx='300' cy='174' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='300' cy='174' r='1.8' fill='%23121314'/%3E%3Ccircle cx='220' cy='230' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='220' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='430' cy='200' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='430' cy='200' r='1.8' fill='%23121314'/%3E%3Ccircle cx='470' cy='351' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='470' cy='351' r='1.8' fill='%23121314'/%3E%3Ccircle cx='180' cy='263' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='180' cy='263' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='230' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='90' cy='230' r='1.8' fill='%23121314'/%3E%3Ccircle cx='90' cy='440' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='90' cy='440' r='1.8' fill='%23121314'/%3E%3Ccircle cx='260' cy='520' r='4.5' fill='%2322352a'/%3E%3Ccircle cx='260' cy='520' r='1.8' fill='%23121314'/%3E%3Ccircle cx='150' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='150' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='165' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='165' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='180' cy='440' r='3.5' fill='%2322352a'/%3E%3Ccircle cx='180' cy='440' r='1.4' fill='%23121314'/%3E%3Ccircle cx='490' cy='490' r='10' fill='%2322352a'/%3E%3Ccircle cx='490' cy='490' r='6' fill='%23121314'/%3E%3Ccircle cx='380' cy='420' r='6' fill='%2322352a'/%3E%3Ccircle cx='520' cy='230' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='230' r='1.6' fill='%23121314'/%3E%3Ccircle cx='534' cy='230' r='4' fill='%2322352a'/%3E%3Ccircle cx='534' cy='230' r='1.6' fill='%23121314'/%3E%3Ccircle cx='520' cy='420' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='420' r='1.6' fill='%23121314'/%3E%3Ccircle cx='534' cy='420' r='4' fill='%2322352a'/%3E%3Ccircle cx='534' cy='420' r='1.6' fill='%23121314'/%3E%3Ccircle cx='520' cy='90' r='4' fill='%2322352a'/%3E%3Ccircle cx='520' cy='90' r='1.6' fill='%23121314'/%3E%3Crect x='316.5' y='305.5' width='27' height='51' fill='none' stroke='%23222427' stroke-width='1'/%3E%3Ccircle cx='321' cy='311' r='1.3' fill='%23222427'/%3E%3Crect x='104.5' y='274.5' width='32' height='17' fill='none' stroke='%23222427' stroke-width='1'/%3E%3C/svg%3E");
+  --pcb-c: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Cg fill='none' stroke='%2318201b' stroke-width='1.2'%3E%3Ccircle cx='16.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='16.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='48.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='80.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='112.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='144.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='176.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='208.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='240.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='272.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='304.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='336.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='368.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='400.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='432.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='464.0' cy='496.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='16.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='48.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='80.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='112.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='144.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='176.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='208.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='240.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='272.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='304.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='336.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='368.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='400.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='432.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='464.0' r='3.2'/%3E%3Ccircle cx='496.0' cy='496.0' r='3.2'/%3E%3C/g%3E%3Cg fill='none' stroke='%231e2d23' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M48 112H112M208 112H240V208'/%3E%3Cpath d='M432 176H464V304H304V368H464V464'/%3E%3C/g%3E%3Cg fill='%23213227'%3E%3Ccircle cx='48' cy='112' r='3.6'/%3E%3Ccircle cx='112' cy='112' r='3.6'/%3E%3Ccircle cx='208' cy='112' r='3.6'/%3E%3Ccircle cx='240' cy='208' r='3.6'/%3E%3Ccircle cx='336' cy='176' r='3.6'/%3E%3Ccircle cx='336' cy='208' r='3.6'/%3E%3Ccircle cx='336' cy='240' r='3.6'/%3E%3Ccircle cx='336' cy='272' r='3.6'/%3E%3Ccircle cx='432' cy='176' r='3.6'/%3E%3Ccircle cx='432' cy='208' r='3.6'/%3E%3Ccircle cx='432' cy='240' r='3.6'/%3E%3Ccircle cx='432' cy='272' r='3.6'/%3E%3Ccircle cx='464' cy='464' r='3.6'/%3E%3C/g%3E%3Cg fill='none' stroke='%231d1f21' stroke-width='1'%3E%3Crect x='124.5' y='105.5' width='72' height='13' rx='2'/%3E%3Cpath d='M348.5 162.5H378.5A5.5 5.5 0 0 0 389.5 162.5H419.5V285.5H348.5Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+body { position: relative; isolation: isolate; min-height: 100vh; }
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-position: center top;
+  background-repeat: repeat;
+}
+:root[data-bg="a"] body::before { background-image: var(--pcb-a); }
+:root[data-bg="b"] body::before {
+  background-image: var(--pcb-b);
+  /* pod textovým sloupcem motiv zeslábne na 65 % */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - 38rem), rgb(0 0 0 / 0.65) calc(50% - 27rem), rgb(0 0 0 / 0.65) calc(50% + 27rem), #000 calc(50% + 38rem));
+  mask-image: linear-gradient(90deg, #000 calc(50% - 38rem), rgb(0 0 0 / 0.65) calc(50% - 27rem), rgb(0 0 0 / 0.65) calc(50% + 27rem), #000 calc(50% + 38rem));
+}
+:root[data-bg="c"] body::before { background-image: var(--pcb-c); }
+
+.bg-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--muted);
+}
+.bg-panel__label { padding-inline: 0.25rem; }
+.bg-panel__sep { width: 1px; height: 1.25rem; margin-inline: 0.25rem; background: var(--line); }
+.bg-panel button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.bg-panel button:hover { color: var(--text); background: var(--bg); }
+.bg-panel button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+@media (max-width: 40rem) {
+  .bg-panel { left: 0.5rem; right: 0.5rem; bottom: 0.5rem; justify-content: center; }
+  .site-footer__inner { padding-bottom: 6rem; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="proto-note" role="note">
+  <p class="wrap"><strong>Prototyp pozadí PCB</strong> · varianty A / B / C a motiv se přepínají vpravo dole · texty jsou pracovní obsah</p>
+</div>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="wordmark" href="#" aria-label="mh42 – úvodní stránka">mh<span>42</span></a>
+    <nav class="nav" aria-label="Hlavní navigace">
+      <ul>
+        <li><a href="#">O mně</a></li>
+        <li><a href="#">Projekty</a></li>
+      </ul>
+    </nav>
+    <button class="theme-toggle" type="button" aria-pressed="false" title="Přepnout světlý / tmavý motiv" hidden>
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/>
+      </svg>
+      <span class="visually-hidden">Tmavý motiv</span>
+    </button>
+  </div>
+</header>
+
+<main id="obsah" class="wrap">
+
+  <!-- Úvod (pracovní text) -->
+  <section class="intro" aria-labelledby="uvod">
+    <div class="intro__body">
+      <h1 id="uvod" class="lead">Osobní web o domácím serveru, automatizaci a několika vlastních aplikacích.</h1>
+      <p class="intro__text">Píšu tu, čemu se věnuji a co mám zrovna rozpracované. Projekty mají vlastní stránku – některé jsou soukromé, takže u nich najdete jen popis.</p>
+      <ul class="intro__links">
+        <li><a class="ext" href="#">GitHub</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Čemu se věnuji (pracovní text) -->
+  <section class="section" aria-labelledby="venuji">
+    <div class="section__head">
+      <h2 id="venuji" class="section__title">Čemu se věnuji</h2>
+    </div>
+    <div class="section__body">
+      <dl class="topics">
+        <div class="topic">
+          <dt>Domácí server a HomeLab</dt>
+          <dd>Server doma, bez veřejné IP adresy. Postupně na něj chci přestěhovat většinu služeb z běžného hostingu a vybrané z nich zpřístupnit přes Cloudflare Tunnel.</dd>
+        </div>
+        <div class="topic">
+          <dt>Domácí automatizace</dt>
+          <dd>Meteostanice, senzory teploty a vlhkosti, spotřeba energie a stav domácí infrastruktury. Na jaké platformě to poběží, zatím není rozhodnuté.</dd>
+        </div>
+        <div class="topic">
+          <dt>Anime a manga</dt>
+          <dd>Vlastní evidence knihovny ve dvou aplikacích, AnimeDB a MangaDB. Nejsou veřejné, na webu je jen jejich popis. <a class="more" href="#">projekty&nbsp;→</a></dd>
+        </div>
+        <div class="topic">
+          <dt>Technické experimenty</dt>
+          <dd>Menší pokusy, které vzniknou po cestě a nehodí se jinam.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Teď (pracovní text) -->
+  <section class="section" aria-labelledby="ted">
+    <div class="section__head">
+      <h2 id="ted" class="section__title">Teď</h2>
+      <p class="section__meta">aktualizováno <time datetime="2026-09-18">2026-09-18</time></p>
+    </div>
+    <div class="section__body">
+      <ul class="now">
+        <li>Stavím tenhle web.<span class="now__note">Zatím jako statický prototyp, potom jednoduché PHP bez frameworku.</span></li>
+        <li>Připravuji přesun služeb z hostingu na domácí server.</li>
+        <li>Vybírám platformu pro domácí automatizaci – Home Assistant, nebo něco jiného.</li>
+        <li>Odděluji veřejné a soukromé služby.<span class="now__note">AnimeDB a MangaDB budou dostupné jen po přihlášení.</span></li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer__inner">
+    <p>mh42.cz</p>
+    <ul class="site-footer__links">
+      <li><a class="ext" href="#">GitHub</a></li>
+      <li><a href="#">Jak tenhle web běží</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // Přepínač motivu. Když volba odpovídá nastavení systému, uložená hodnota se smaže
+  // a web se zase řídí systémem.
+  (function () {
+    var root = document.documentElement;
+    var btn = document.querySelector('.theme-toggle');
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function system() { return mq.matches ? 'dark' : 'light'; }
+    function current() { return root.getAttribute('data-theme') || system(); }
+    function sync() { btn.setAttribute('aria-pressed', current() === 'dark' ? 'true' : 'false'); }
+
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      var followSystem = next === system();
+      if (followSystem) root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', next);
+      try {
+        if (followSystem) localStorage.removeItem('mh42-theme');
+        else localStorage.setItem('mh42-theme', next);
+      } catch (e) {}
+      sync();
+    });
+
+    mq.addEventListener('change', sync);
+    btn.hidden = false;
+    sync();
+  })();
+</script>
+
+<div class="bg-panel" role="group" aria-label="Volba pozadí (jen prototyp)">
+  <span class="bg-panel__label">pozadí</span>
+  <button type="button" data-set-bg="none">bez</button>
+  <button type="button" data-set-bg="a">A</button>
+  <button type="button" data-set-bg="b">B</button>
+  <button type="button" data-set-bg="c">C</button>
+  <span class="bg-panel__sep" aria-hidden="true"></span>
+  <button type="button" data-set-theme="light">světlý</button>
+  <button type="button" data-set-theme="dark">tmavý</button>
+</div>
+
+<script>
+  // Přepínání variant pozadí a motivu (jen prototyp). Stav je i v adrese, např. #b-dark.
+  (function () {
+    var root = document.documentElement;
+    var media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function theme() { return root.getAttribute('data-theme') || (media.matches ? 'dark' : 'light'); }
+
+    function sync() {
+      var bg = root.getAttribute('data-bg') || 'none';
+      document.querySelectorAll('[data-set-bg]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.setBg === bg ? 'true' : 'false');
+      });
+      document.querySelectorAll('[data-set-theme]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.setTheme === theme() ? 'true' : 'false');
+      });
+      history.replaceState(null, '', '#' + bg + '-' + theme());
+    }
+
+    document.querySelectorAll('[data-set-bg]').forEach(function (b) {
+      b.addEventListener('click', function () { root.setAttribute('data-bg', b.dataset.setBg); sync(); });
+    });
+    document.querySelectorAll('[data-set-theme]').forEach(function (b) {
+      b.addEventListener('click', function () { root.setAttribute('data-theme', b.dataset.setTheme); sync(); });
+    });
+
+    var m = /^#(none|a|b|c)-(light|dark)$/.exec(location.hash);
+    if (m) { root.setAttribute('data-bg', m[1]); root.setAttribute('data-theme', m[2]); }
+    else root.setAttribute('data-bg', 'a');
+
+    new MutationObserver(sync).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    media.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+# Apache (WEDOS). Na jiném serveru je potřeba stejné chování nastavit v jeho konfiguraci.
+# Direktivy níže jsou na WEDOS ověřené diagnostikou (2026-09-18).
+
+# ---------- Výchozí pravidla WEDOS pro aliasy a subdomény ----------
+# Převzato z původního .htaccess hostingu, aby fungovaly adresáře www/domains/<doména>
+# a www/subdom/<subdoména>. Dokud tyto adresáře neexistují, pravidla nic nedělají.
+# Info: https://kb.wedos.com/cs/webhosting/htaccess/htaccess-na-webhostingu
+RewriteEngine On
+
+RewriteCond %{REQUEST_URI} !^domains/
+RewriteCond %{REQUEST_URI} !^/domains/
+RewriteCond %{HTTP_HOST} ^(www\.)?(.*)$
+RewriteCond %{DOCUMENT_ROOT}/domains/%2 -d
+RewriteRule (.*) domains/%2/$1 [DPI]
+
+RewriteCond %{REQUEST_URI} !^subdom/
+RewriteCond %{REQUEST_URI} !^/subdom/
+RewriteCond %{HTTP_HOST} ^(www\.)?(.*)\.([^\.]*)\.([^\.]*)$
+RewriteCond %{DOCUMENT_ROOT}/subdom/%2 -d
+RewriteRule (.*) subdom/%2/$1 [DPI]
+
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^domains/[^/]+/(.+[^/])$ /$1/ [R]
+
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^subdom/[^/]+/(.+[^/])$ /$1/ [R]
+
+# ---------- mh42.cz ----------
+
+ErrorDocument 404 /404.php
+
+# Nevypisovat obsah složek bez index.php (např. /assets/). Zakázaný výpis složky
+# se navenek chová jako neexistující stránka – 404.php nastaví stav 404.
+Options -Indexes
+ErrorDocument 403 /404.php
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Statické soubory: stejná ochrana proti „čichání“ typu jako u stránek z PHP.
+  <FilesMatch "\.(css|js|woff2|svg|png|ico|txt|xml)$">
+    Header set X-Content-Type-Options "nosniff"
+  </FilesMatch>
+
+  # CSS a JS mají v adrese ?v=<otisk obsahu>, písma se při změně přejmenují
+  # – můžou se proto cachovat dlouho.
+  <FilesMatch "\.(css|js|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Obrázky a ikony: týden. favicon.ico a og-image.png mají pevnou adresu bez verze.
+  <FilesMatch "\.(svg|png|ico)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>

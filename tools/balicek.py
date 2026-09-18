@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""Sestaví produkční balíček webu do dist/.
+
+Varianta A (preferovaná): public/ je kořen webu, src/ config/ content/ leží vedle něj
+(mimo web). Varianta B (záložní): všechno v jednom veřejném adresáři – obsah public/
+v kořeni, src/ config/ content/ jako podsložky se zákazem přístupu z webu.
+
+Před sestavením ověří, že vygenerované soubory (robots.txt, sitemap.xml, OG obrázek,
+dlaždice pozadí) existují a sedí s konfigurací. Otisky assetů zapíše do
+config/asset-versions.php (verze v adresách CSS/JS/obrázků podle obsahu).
+
+Spuštění: python3 tools/balicek.py [--bez-lintu]
+"""
+import hashlib, re, shutil, struct, subprocess, sys, time, zipfile
+from pathlib import Path
+from xml.dom import minidom
+
+ROOT = Path(__file__).resolve().parent.parent
+PUBLIC = ROOT / 'public'
+DIST = ROOT / 'dist'
+
+# Co z public/ nepatří na produkci (vývojové stránky).
+PUBLIC_EXCLUDE = {'styleguide', 'assets/css/styleguide.css'}
+
+DENY_HTACCESS = """# Interní soubory aplikace – z webu nedostupné.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
+"""
+
+errors = []
+
+
+def check(ok, message):
+    print(('  ok    ' if ok else '  CHYBA ') + message)
+    if not ok:
+        errors.append(message)
+
+
+def sha(path, n):
+    return hashlib.sha1(path.read_bytes()).hexdigest()[:n]
+
+
+def preflight(lint):
+    print('Kontrola před sestavením:')
+    config = (ROOT / 'config' / 'app.php').read_text(encoding='utf-8')
+    base_url = re.search(r"'base_url'\s*=>\s*'([^']+)'", config).group(1).rstrip('/')
+    env = re.search(r"'env'\s*=>\s*'([^']+)'", config).group(1)
+    nav = re.findall(r"'href'\s*=>\s*'([^']+)'", config)
+    check(env == 'production', f"config/app.php: env = '{env}'")
+    check(base_url == 'https://mh42.cz', f'config/app.php: base_url = {base_url}')
+
+    robots = (PUBLIC / 'robots.txt').read_text(encoding='utf-8')
+    check(f'Sitemap: {base_url}/sitemap.xml' in robots, 'robots.txt odkazuje na produkční sitemap')
+    doc = minidom.parse(str(PUBLIC / 'sitemap.xml'))
+    locs = [n.firstChild.data for n in doc.getElementsByTagName('loc')]
+    expected = [base_url + p for p in ['/'] + nav]
+    check(locs == expected, f'sitemap.xml = úvodní stránka + navigace ({len(locs)} adres)')
+
+    og = PUBLIC / 'assets' / 'img' / 'og-image.png'
+    w, h = struct.unpack('>II', og.read_bytes()[16:24]) if og.is_file() else (0, 0)
+    check((w, h) == (1200, 630), f'og-image.png {w}×{h}')
+    for name in ('favicon.ico', 'assets/img/favicon.svg', 'assets/img/apple-touch-icon.png'):
+        check((PUBLIC / name).is_file(), f'{name} existuje')
+
+    tokens = (PUBLIC / 'assets' / 'css' / 'tokens.css').read_text(encoding='utf-8')
+    for tile in ('schema.svg', 'pcb.svg'):
+        path = PUBLIC / 'assets' / 'img' / 'pozadi' / tile
+        m = re.search(r'pozadi/' + re.escape(tile) + r'\?v=([0-9a-f]+)', tokens)
+        check(path.is_file() and m and m.group(1) == sha(path, 8), f'pozadí {tile}: verze v tokens.css odpovídá obsahu')
+
+    for css in sorted((PUBLIC / 'assets' / 'css').glob('*.css')):
+        for ref in re.findall(r'url\("?([^")]+)"?\)', css.read_text(encoding='utf-8')):
+            if ref.startswith('data:'):
+                continue
+            target = (css.parent / ref.split('?')[0]).resolve()
+            check(target.is_file(), f'{css.name}: {ref.split("?")[0]} existuje')
+
+    if lint:
+        cmd = ['docker', 'run', '--rm', '-v', f'{ROOT}:/app', '-w', '/app', 'php:8.3-cli-alpine', 'sh', '-c',
+               'for f in $(find public src config -name "*.php"); do php -l "$f" >/dev/null || echo "$f"; done']
+        try:
+            bad = subprocess.run(cmd, capture_output=True, text=True, timeout=120).stdout.strip()
+            check(bad == '', 'PHP syntaxe (php 8.3)' + (f': {bad}' if bad else ''))
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f'  pozor PHP lint se nespustil ({exc}); spusť se --bez-lintu nebo zkontroluj ručně')
+
+
+def copy_public(target):
+    for src in PUBLIC.rglob('*'):
+        rel = src.relative_to(PUBLIC).as_posix()
+        if any(rel == ex or rel.startswith(ex + '/') for ex in PUBLIC_EXCLUDE) or src.is_dir():
+            continue
+        dst = target / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+
+
+def copy_app(target):
+    for name in ('src', 'content'):
+        shutil.copytree(ROOT / name, target / name)
+    (target / 'config').mkdir(parents=True)
+    shutil.copy2(ROOT / 'config' / 'app.php', target / 'config' / 'app.php')   # nikdy local.php
+
+
+def write_versions(config_dir):
+    lines = ['<?php', '', '// Generováno nástrojem tools/balicek.py – otisky obsahu assetů pro asset(). Neupravovat ručně.', '',
+             'return [']
+    for path in sorted((PUBLIC / 'assets').rglob('*')):
+        rel = path.relative_to(PUBLIC / 'assets').as_posix()
+        if path.is_file() and not any(('assets/' + rel).startswith(ex) for ex in PUBLIC_EXCLUDE):
+            lines.append(f"    '{rel}' => '{sha(path, 10)}',")
+    lines += ['];', '']
+    (config_dir / 'asset-versions.php').write_text('\n'.join(lines), encoding='utf-8')
+
+
+def file_list(root, out):
+    rows = []
+    for path in sorted(p for p in root.rglob('*') if p.is_file()):
+        rows.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root).as_posix()}')
+    out.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+    return len(rows)
+
+
+def zip_dir(root, out):
+    with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
+        for path in sorted(p for p in root.rglob('*') if p.is_file()):
+            z.write(path, path.relative_to(root).as_posix())
+
+
+def build():
+    stamp = time.strftime('%Y-%m-%d-%H%M')
+    out = DIST / f'mh42-v1-{stamp}'
+    a = out / 'A-oddeleny-koren'
+    b = out / 'B-jeden-adresar'
+
+    # Varianta A: stejné rozložení jako v repozitáři
+    copy_public(a / 'public')
+    copy_app(a)
+    write_versions(a / 'config')
+
+    # Varianta B: obsah public/ v kořeni, aplikace v podsložkách se zákazem přístupu
+    copy_public(b)
+    copy_app(b)
+    write_versions(b / 'config')
+    app = (b / '_app.php').read_text(encoding='utf-8')
+    app = app.replace("require dirname(__DIR__) . '/src/bootstrap.php';", "require __DIR__ . '/src/bootstrap.php';")
+    (b / '_app.php').write_text(app, encoding='utf-8')
+    for name in ('src', 'config', 'content'):
+        (b / name / '.htaccess').write_text(DENY_HTACCESS, encoding='utf-8')
+
+    # Náhradní .htaccess pro případ, že hosting nepovolí „Options“ (HTTP 500)
+    spare = out / 'nahradni-htaccess'
+    spare.mkdir(parents=True)
+    htaccess = (PUBLIC / '.htaccess').read_text(encoding='utf-8')
+    no_options = htaccess.replace("""Options -Indexes
+ErrorDocument 403 /404.php""", """# Hosting nepovolil „Options -Indexes“ – výpis složek místo toho zastaví DirectoryIndex:
+# složka bez index.php zobrazí stránku 404 (se stavem 404).
+DirectoryIndex index.php /404.php
+ErrorDocument 403 /404.php""")
+    assert no_options != htaccess
+    (spare / 'htaccess-bez-options.txt').write_text(no_options, encoding='utf-8')
+
+    counts = {}
+    for variant in (a, b):
+        counts[variant.name] = file_list(variant, out / f'SOUBORY-{variant.name}.txt')
+        zip_dir(variant, out / f'{variant.name}.zip')
+    return out, counts
+
+
+if __name__ == '__main__':
+    preflight(lint='--bez-lintu' not in sys.argv)
+    if errors:
+        sys.exit(f'\nBalíček nesestaven – {len(errors)} chyb.')
+    out, counts = build()
+    print(f'\nBalíček: {out.relative_to(ROOT)}')
+    for name, n in counts.items():
+        print(f'  {name}: {n} souborů ({name}.zip, SOUBORY-{name}.txt)')

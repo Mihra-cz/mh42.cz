@@ -1,0 +1,3 @@
+# Licence písma IBM Plex (SIL OFL) je převzatá beze změn – obsahuje koncové mezery,
+# proto ji git nekontroluje na bílé znaky.
+public/assets/fonts/LICENSE.txt -whitespace

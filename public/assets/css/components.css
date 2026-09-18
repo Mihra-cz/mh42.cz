@@ -1,0 +1,121 @@
+/* Obsahové komponenty. */
+
+/* ---------- Seznam oblastí (Čemu se věnuji) ---------- */
+
+.topics { display: grid; gap: 1.75rem; }
+
+.topic dt {
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.topic dd { margin-top: 0.3rem; color: var(--muted); }
+
+/* Kontextový odkaz na konci odstavce. Šipka je jen vizuální, čtečka ji nepřečte. */
+.more {
+  margin-left: 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+.more::after { content: "\00a0\2192"; content: "\00a0\2192" / ""; }
+
+/* ---------- Datovaný seznam (Teď) ---------- */
+
+.now {
+  display: grid;
+  gap: 0.875rem;
+  padding: 0;
+  list-style: none;
+}
+
+.now li { position: relative; padding-left: 1.5rem; }
+
+.now li::before {
+  content: "\2013";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.now__note { display: block; color: var(--muted); }
+
+/* ---------- Souvislý text ---------- */
+
+.prose > * + * { margin-top: 0.9em; }
+
+/* ---------- Seznam projektů ---------- */
+/* Řádek: název vlevo, popis a údaje vpravo. Když na to není místo, popis se zalomí pod název. */
+
+.projects {
+  display: grid;
+  gap: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.project {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.5rem;
+}
+
+.project + .project {
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--line);
+}
+
+.project__name {
+  flex: 0 0 9rem;
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.project__body {
+  flex: 1 1 20rem;
+  min-width: 0;
+  color: var(--muted);
+}
+
+/* Údaje „klíč hodnota“ – stav, přístup, technologie. */
+.project__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+.project__meta div { display: flex; gap: 0.5em; }
+.project__meta dd { color: var(--text); }
+
+/* ---------- Legenda ---------- */
+
+.legend__intro { margin-bottom: 1.25rem; color: var(--muted); }
+
+.legend { display: grid; gap: 0.75rem; }
+
+.legend div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 1.5rem;
+}
+
+.legend dt {
+  flex: 0 0 9rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+.legend dd {
+  flex: 1 1 16rem;
+  color: var(--muted);
+}

@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "key": "aplikace",
+      "label": "Aplikace"
+    },
+    {
+      "key": "domacnost",
+      "label": "Domácnost a infrastruktura"
+    },
+    {
+      "key": "web",
+      "label": "Tento web"
+    }
+  ],
+  "projects": [
+    {
+      "slug": "animedb",
+      "name": "AnimeDB",
+      "group": "aplikace",
+      "summary": "Vlastní webová aplikace pro správu domácí anime knihovny. Eviduje tituly, sezóny a další části, metadata i samotné video soubory – jejich technické vlastnosti, duplicity a kontrolu médií.",
+      "status": "development",
+      "access": "private",
+      "tech": [
+        "Python",
+        "FastAPI",
+        "Jinja2",
+        "SQLite"
+      ]
+    },
+    {
+      "slug": "mangadb",
+      "name": "MangaDB",
+      "group": "aplikace",
+      "summary": "Budoucí sesterský projekt k AnimeDB, tentokrát pro správu manga knihovny.",
+      "status": "planned",
+      "access": "private"
+    },
+    {
+      "slug": "homelab",
+      "name": "HomeLab",
+      "group": "domacnost",
+      "summary": "Domácí serverová infrastruktura pro provoz vlastních služeb – síť, kontejnery a vzdálený přístup. Postupně sem stěhuji aplikace, které dnes běží jinde nebo teprve vznikají. Veřejný je jen tento popis – správa i služby HomeLabu jsou dostupné jen lokálně nebo jinou neveřejnou cestou.",
+      "status": "building"
+    },
+    {
+      "slug": "domaci-automatizace",
+      "name": "Domácí automatizace",
+      "group": "domacnost",
+      "summary": "Chytrá domácnost a sběr domácích dat: meteostanice, venkovní a vnitřní senzory, teplota a vlhkost, energie a automatizace. Platforma zatím není rozhodnutá, jednou z možností je Home Assistant.",
+      "status": "planned",
+      "access": "local"
+    },
+    {
+      "slug": "mh42",
+      "name": "mh42.cz",
+      "group": "web",
+      "summary": "Osobní technický portál – veřejné místo pro informace o mně, o projektech a časem i pro vybraná bezpečná data z domácích systémů. Zatím běží na PHP hostingu, cílem je přesun na domácí server.",
+      "status": "development",
+      "access": "public",
+      "tech": [
+        "PHP",
+        "HTML",
+        "CSS"
+      ],
+      "link": {
+        "href": "/o-mne/#jak-web-bezi",
+        "label": "jak běží"
+      }
+    }
+  ]
+}

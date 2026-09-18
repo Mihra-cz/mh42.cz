@@ -1,0 +1,503 @@
+<!doctype html>
+<!--
+  mh42.cz – statický prototyp homepage (vizuální koncept „technický list“).
+  Není to produkční kód. Všechny texty jsou pracovní obsah.
+-->
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<title>mh42 · prototyp homepage</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%23a8461a'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' fill='%23f6f5f1' text-anchor='middle'%3E42%3C/text%3E%3C/svg%3E">
+<script>
+  // Uloženou volbu motivu nastavit ještě před vykreslením, aby stránka neproblikla.
+  (function () {
+    try {
+      var t = localStorage.getItem('mh42-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+/* ---------- Tokeny ---------- */
+
+:root {
+  --bg: #f6f5f1;
+  --surface: #eeece6;
+  --text: #1c1c1a;
+  --muted: #5c5a54;
+  --line: #d9d6cc;
+  --accent: #a8461a;
+  color-scheme: light;
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "Noto Sans Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+
+  --text-label: 0.8125rem;   /* popisky sekcí – verzálky */
+  --text-meta: 0.875rem;     /* metadata, patička */
+  --text-body: 1.0625rem;    /* 17 px */
+  --text-term: 1.125rem;
+  --text-lead: clamp(1.375rem, 1.05rem + 1.35vw, 1.875rem);
+
+  --page: 60rem;
+  --measure: 40rem;
+  --gutter: 1rem;
+  --label: 9rem;
+  --col-gap: 2rem;
+}
+
+/* Tmavý motiv: podle systému, pokud uživatel nezvolil jinak … */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121314;
+    --surface: #1b1c1e;
+    --text: #e7e5df;
+    --muted: #9d9a92;
+    --line: #2d2e31;
+    --accent: #f0925a;
+    color-scheme: dark;
+  }
+}
+/* … nebo ručně přepnutý. */
+:root[data-theme="dark"] {
+  --bg: #121314;
+  --surface: #1b1c1e;
+  --text: #e7e5df;
+  --muted: #9d9a92;
+  --line: #2d2e31;
+  --accent: #f0925a;
+  color-scheme: dark;
+}
+
+@media (min-width: 40rem) { :root { --gutter: 1.5rem; } }
+@media (min-width: 64rem) { :root { --gutter: 2rem; --label: 11rem; --col-gap: 3rem; } }
+
+/* ---------- Základ ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.6;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, p, ul, dl, dd { margin: 0; }
+
+p, dd, li { text-wrap: pretty; }
+
+a {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  transition: color 0.12s, text-decoration-color 0.12s;
+}
+a:hover { color: var(--accent); text-decoration-color: currentColor; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+::selection { background: var(--accent); color: var(--bg); }
+
+.ext::after { content: "\2197"; content: "\2197" / ""; margin-left: 0.2em; }
+
+.wrap {
+  width: min(100% - 2 * var(--gutter), var(--page));
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--gutter);
+  top: -3rem;
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: var(--text);
+  color: var(--bg);
+  font-size: var(--text-meta);
+}
+.skip-link:focus { top: 0.5rem; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Pruh prototypu (jen pro posouzení, v produkci nebude) ---------- */
+
+.proto-note {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  padding-block: 0.5rem;
+}
+.proto-note strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Hlavička ---------- */
+
+.site-header { border-bottom: 1px solid var(--line); }
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.75rem;
+  min-height: 4rem;
+}
+
+.wordmark {
+  margin-right: auto;
+  padding-block: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+.wordmark span { color: var(--accent); }
+.wordmark:hover { color: inherit; }
+
+.nav ul {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+.nav a {
+  display: block;
+  padding: 0.625rem 0.5rem;
+  line-height: 1.5;
+  font-size: 1rem;
+  text-decoration: none;
+}
+.nav a:hover,
+.nav a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.4em;
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: -0.75rem;   /* opticky zarovnat ikonu s pravým okrajem */
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.theme-toggle[hidden] { display: none; }
+.theme-toggle:hover { color: var(--text); background: var(--surface); }
+
+/* ---------- Úvod ---------- */
+
+.intro { padding-block: 2.5rem 2.75rem; }
+
+.lead {
+  max-width: 32ch;
+  font-size: var(--text-lead);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.intro__text {
+  max-width: 36rem;
+  margin-top: 1.25rem;
+  color: var(--muted);
+}
+
+.intro__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 1.25rem;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+/* ---------- Sekce „technického listu“ ---------- */
+
+.section {
+  position: relative;
+  border-top: 1px solid var(--line);
+  padding-block: 2rem 2.5rem;
+}
+/* krátký akcentní úsek na začátku každé dělicí linky */
+.section::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 1.5rem;
+  height: 2px;
+  background: var(--accent);
+}
+
+.section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.section__title {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.section__meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.4;
+  color: var(--muted);
+}
+.section__meta time { white-space: nowrap; }
+
+.section__body { max-width: var(--measure); }
+
+/* Čemu se věnuji */
+.topics { display: grid; gap: 1.75rem; }
+.topic dt {
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+.topic dd { margin-top: 0.3rem; color: var(--muted); }
+
+.more {
+  margin-left: 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+
+/* Teď */
+.now {
+  display: grid;
+  gap: 0.875rem;
+  padding: 0;
+  list-style: none;
+}
+.now li { position: relative; padding-left: 1.5rem; }
+.now li::before {
+  content: "\2013";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+.now__note { display: block; color: var(--muted); }
+
+/* ---------- Patička ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.site-footer__inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  padding-block: 1.5rem 3rem;
+}
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------- Dvousloupcový „technický list“ od tabletu výš ---------- */
+
+@media (min-width: 48rem) {
+  .intro,
+  .section,
+  .site-footer__inner {
+    display: grid;
+    grid-template-columns: var(--label) minmax(0, 1fr);
+    column-gap: var(--col-gap);
+    align-items: baseline;
+  }
+  .intro__body,
+  .section__body,
+  .site-footer__links { grid-column: 2; }
+
+  .intro { padding-block: 4rem 3.75rem; }
+  .section { padding-block: 2.75rem 3.25rem; }
+
+  .section__head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-bottom: 0;
+  }
+  .section__meta time { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#obsah">Přeskočit na obsah</a>
+
+<div class="proto-note" role="note">
+  <p class="wrap"><strong>Prototyp homepage</strong> · všechny texty jsou pracovní obsah, ne finální znění · odkazy zatím nikam nevedou</p>
+</div>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="wordmark" href="#" aria-label="mh42 – úvodní stránka">mh<span>42</span></a>
+    <nav class="nav" aria-label="Hlavní navigace">
+      <ul>
+        <li><a href="#">O mně</a></li>
+        <li><a href="#">Projekty</a></li>
+      </ul>
+    </nav>
+    <button class="theme-toggle" type="button" aria-pressed="false" title="Přepnout světlý / tmavý motiv" hidden>
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/>
+      </svg>
+      <span class="visually-hidden">Tmavý motiv</span>
+    </button>
+  </div>
+</header>
+
+<main id="obsah" class="wrap">
+
+  <!-- Úvod (pracovní text) -->
+  <section class="intro" aria-labelledby="uvod">
+    <div class="intro__body">
+      <h1 id="uvod" class="lead">Osobní web o domácím serveru, automatizaci a několika vlastních aplikacích.</h1>
+      <p class="intro__text">Píšu tu, čemu se věnuji a co mám zrovna rozpracované. Projekty mají vlastní stránku – některé jsou soukromé, takže u nich najdete jen popis.</p>
+      <ul class="intro__links">
+        <li><a class="ext" href="#">GitHub</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Čemu se věnuji (pracovní text) -->
+  <section class="section" aria-labelledby="venuji">
+    <div class="section__head">
+      <h2 id="venuji" class="section__title">Čemu se věnuji</h2>
+    </div>
+    <div class="section__body">
+      <dl class="topics">
+        <div class="topic">
+          <dt>Domácí server a HomeLab</dt>
+          <dd>Server doma, bez veřejné IP adresy. Postupně na něj chci přestěhovat většinu služeb z běžného hostingu a vybrané z nich zpřístupnit přes Cloudflare Tunnel.</dd>
+        </div>
+        <div class="topic">
+          <dt>Domácí automatizace</dt>
+          <dd>Meteostanice, senzory teploty a vlhkosti, spotřeba energie a stav domácí infrastruktury. Na jaké platformě to poběží, zatím není rozhodnuté.</dd>
+        </div>
+        <div class="topic">
+          <dt>Anime a manga</dt>
+          <dd>Vlastní evidence knihovny ve dvou aplikacích, AnimeDB a MangaDB. Nejsou veřejné, na webu je jen jejich popis. <a class="more" href="#">projekty&nbsp;→</a></dd>
+        </div>
+        <div class="topic">
+          <dt>Technické experimenty</dt>
+          <dd>Menší pokusy, které vzniknou po cestě a nehodí se jinam.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Teď (pracovní text) -->
+  <section class="section" aria-labelledby="ted">
+    <div class="section__head">
+      <h2 id="ted" class="section__title">Teď</h2>
+      <p class="section__meta">aktualizováno <time datetime="2026-09-18">2026-09-18</time></p>
+    </div>
+    <div class="section__body">
+      <ul class="now">
+        <li>Stavím tenhle web.<span class="now__note">Zatím jako statický prototyp, potom jednoduché PHP bez frameworku.</span></li>
+        <li>Připravuji přesun služeb z hostingu na domácí server.</li>
+        <li>Vybírám platformu pro domácí automatizaci – Home Assistant, nebo něco jiného.</li>
+        <li>Odděluji veřejné a soukromé služby.<span class="now__note">AnimeDB a MangaDB budou dostupné jen po přihlášení.</span></li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap site-footer__inner">
+    <p>mh42.cz</p>
+    <ul class="site-footer__links">
+      <li><a class="ext" href="#">GitHub</a></li>
+      <li><a href="#">Jak tenhle web běží</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  // Přepínač motivu. Když volba odpovídá nastavení systému, uložená hodnota se smaže
+  // a web se zase řídí systémem.
+  (function () {
+    var root = document.documentElement;
+    var btn = document.querySelector('.theme-toggle');
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function system() { return mq.matches ? 'dark' : 'light'; }
+    function current() { return root.getAttribute('data-theme') || system(); }
+    function sync() { btn.setAttribute('aria-pressed', current() === 'dark' ? 'true' : 'false'); }
+
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      var followSystem = next === system();
+      if (followSystem) root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', next);
+      try {
+        if (followSystem) localStorage.removeItem('mh42-theme');
+        else localStorage.setItem('mh42-theme', next);
+      } catch (e) {}
+      sync();
+    });
+
+    mq.addEventListener('change', sync);
+    btn.hidden = false;
+    sync();
+  })();
+</script>
+</body>
+</html>

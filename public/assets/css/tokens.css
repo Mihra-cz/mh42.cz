@@ -1,0 +1,75 @@
+/* Design tokeny mh42: barvy, písmo, rozměry.
+   Tmavý motiv je definovaný dvakrát – podle nastavení systému a pro ručně
+   zvolený motiv (atribut data-theme na <html>). Hodnoty musí zůstat shodné. */
+
+:root {
+  --bg: #f6f5f1;
+  --surface: #eeece6;
+  --text: #1c1c1a;
+  --muted: #5c5a54;
+  --line: #d9d6cc;
+  --accent: #a8461a;
+  --bg-pattern: url("../img/pozadi/schema.svg?v=9b652b75");   /* motiv pozadí: schéma */
+  color-scheme: light;
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", "Noto Sans Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+
+  --text-label: 0.8125rem;   /* popisky sekcí – verzálky */
+  --text-meta: 0.875rem;     /* metadata, patička */
+  --text-body: 1.0625rem;    /* 17 px */
+  --text-term: 1.125rem;
+  --text-lead: clamp(1.375rem, 1.05rem + 1.35vw, 1.875rem);
+
+  --page: 60rem;             /* šířka obsahu stránky */
+  --measure: 40rem;          /* maximální délka řádku textu */
+  --gutter: 1rem;            /* boční okraj */
+  --label: 9rem;             /* sloupec popisků „technického listu“ */
+  --col-gap: 2rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121314;
+    --surface: #1b1c1e;
+    --text: #e7e5df;
+    --muted: #9d9a92;
+    --line: #2d2e31;
+    --accent: #f0925a;
+    --bg-pattern: url("../img/pozadi/pcb.svg?v=d887fd47");    /* motiv pozadí: layout desky */
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #121314;
+  --surface: #1b1c1e;
+  --text: #e7e5df;
+  --muted: #9d9a92;
+  --line: #2d2e31;
+  --accent: #f0925a;
+  --bg-pattern: url("../img/pozadi/pcb.svg?v=d887fd47");
+  color-scheme: dark;
+}
+
+/* Tisk: vždy světlá paleta bez ohledu na motiv – tmavé pozadí se netiskne
+   a světlý text by na papíře nebyl čitelný. Zdvojený :root přebije pravidla výše. */
+@media print {
+  :root:root {
+    --bg: #fff;
+    --surface: #fff;
+    --text: #000;
+    --muted: #444;
+    --line: #bbb;
+    --accent: #a8461a;
+    color-scheme: light;
+  }
+}
+
+@media (min-width: 40rem) {
+  :root { --gutter: 1.5rem; }
+}
+
+@media (min-width: 64rem) {
+  :root { --gutter: 2rem; --label: 11rem; --col-gap: 3rem; }
+}

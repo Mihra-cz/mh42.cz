@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mh42-dev",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "run",
+        "--rm",
+        "--name",
+        "mh42-dev",
+        "-p",
+        "8000:8000",
+        "-v",
+        "./:/app",
+        "-w",
+        "/app",
+        "-e",
+        "APP_ENV=dev",
+        "php:8.3-cli-alpine",
+        "php",
+        "-S",
+        "0.0.0.0:8000",
+        "-t",
+        "public",
+        "tools/dev-router.php"
+      ],
+      "port": 8000
+    }
+  ]
+}

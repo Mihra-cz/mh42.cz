@@ -1,0 +1,66 @@
+/* Motiv pozadí (varianta B): ve světlém motivu elektronické schéma, v tmavém
+   layout desky plošných spojů. Dlaždice generuje tools/pozadi-pcb.py.
+   Pod hlavním obsahem je motiv zeslabený, naplno jen ve volných okrajích. */
+
+body {
+  position: relative;
+  isolation: isolate;   /* vrstva motivu zůstane pod obsahem, ale nad pozadím stránky */
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--bg-pattern);
+  background-position: center top;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - 38rem), rgb(0 0 0 / 0.65) calc(50% - 27rem), rgb(0 0 0 / 0.65) calc(50% + 27rem), #000 calc(50% + 38rem));
+  mask-image: linear-gradient(90deg, #000 calc(50% - 38rem), rgb(0 0 0 / 0.65) calc(50% - 27rem), rgb(0 0 0 / 0.65) calc(50% + 27rem), #000 calc(50% + 38rem));
+}
+
+/* Ochranné pásmo kolem vodorovných dělicích linek: motiv se k nim nepřibližuje,
+   aby se jeho čáry nepletly s linkami layoutu. */
+.site-header,
+.site-footer,
+.project + .project { position: relative; }
+
+.site-header::after,
+.site-footer::after,
+.section::after,
+.project + .project::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  height: 1.5rem;
+  pointer-events: none;
+  /* Pásmo je border-image: jeho přesah do stran (--band-reach) je jen vizuální
+     a nerozšiřuje stránku, takže nevznikne vodorovné posouvání. */
+  border-image: linear-gradient(transparent, var(--bg) 30%, var(--bg) 70%, transparent) 0 fill / 0 / 0 var(--band-reach, 0);
+}
+
+.site-header::after { bottom: -0.75rem; }
+
+/* Linky sekcí končí na šířce obsahu, ale pásmo vede přes celé okno,
+   aby na ně nenavazovaly čáry motivu ve volných okrajích. */
+.section::after { --band-reach: 100vw; }
+
+/* Oddělovače řádků projektů jsou kratší – pásmo stačí o kus přesáhnout jejich konce,
+   aby na ně nenavazovala cesta nebo vodič motivu. */
+.project + .project::after { --band-reach: 8rem; }
+
+.site-footer::after,
+.section::after,
+.project + .project::after { top: -0.75rem; }
+
+/* Kde má přednost čitelnost nebo úspora, motiv se nezobrazuje. */
+@media (prefers-contrast: more), (forced-colors: active), print {
+  body::before,
+  .site-header::after,
+  .site-footer::after,
+  .section::after,
+  .project + .project::after { display: none; }
+}
