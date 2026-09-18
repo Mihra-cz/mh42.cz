@@ -61,6 +61,7 @@ function template(string $name, array $vars = []): void
  *   description  popis pro vyhledávače
  *   noindex      true = stránka se nemá indexovat
  *   styles       další CSS soubory z public/assets
+ *   scripts      další JS soubory z public/assets (načítají se s defer)
  *   type         Open Graph typ: 'website' nebo 'article' (poznámky)
  */
 function page_start(array $page): void
@@ -72,6 +73,7 @@ function page_start(array $page): void
         'description' => '',
         'noindex'     => false,
         'styles'      => [],
+        'scripts'     => [],
         'type'        => 'website',
     ];
 
@@ -118,7 +120,8 @@ function send_default_headers(): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');   // pro starší prohlížeče bez frame-ancestors
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+    // Polohu smí zjistit jen tenhle web (tlačítko u počasí, po kliknutí), žádný cizí původ ani iframe.
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()');
     // HTML se může uložit, ale před použitím se vždy ověří – změny obsahu jsou vidět hned.
     header('Cache-Control: no-cache');
 }

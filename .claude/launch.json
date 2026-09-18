@@ -26,6 +26,12 @@
         "tools/dev-router.php"
       ],
       "port": 8000
+    },
+    {
+      "name": "mh42-pocasi-nahled",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["tools/test-pocasi-web.py", "--nahled"],
+      "port": 8092
     }
   ]
 }

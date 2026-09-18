@@ -46,7 +46,7 @@ $github = config('github_url');
   <div class="section__body prose">
     <p>Web běží na doméně mh42.cz. DNS a&nbsp;další síťové služby spravuji v&nbsp;Cloudflare.</p>
     <p>Stránky jsou obyčejné HTML a&nbsp;CSS, které skládá několik jednoduchých PHP šablon – bez frameworku, databáze a&nbsp;sestavovacích nástrojů. První verze běží na klasickém PHP hostingu.</p>
-    <p>Písmo IBM Plex Sans a&nbsp;IBM Plex Mono je uložené přímo na webu, takže se nic nenačítá z&nbsp;cizích serverů. Web aktuálně nepoužívá analytické služby třetích stran ani cookies.</p>
+    <p>Písmo IBM Plex Sans a&nbsp;IBM Plex Mono je uložené přímo na webu, takže se nic nenačítá z&nbsp;cizích serverů. Počasí na úvodní stránce načítá server z&nbsp;Open-Meteo a&nbsp;drží ho 15&nbsp;minut v&nbsp;cache; prohlížeč komunikuje jen s&nbsp;mh42.cz. Web aktuálně nepoužívá analytické služby třetích stran ani cookies.</p>
     <p>Světlý nebo tmavý motiv se řídí nastavením systému. Přepínačem v&nbsp;hlavičce ho jde změnit a&nbsp;volba zůstane uložená jen ve vašem prohlížeči.</p>
     <p>Dlouhodobě se web přestěhuje na domácí server. Ten nemá veřejnou IP adresu, proto budou vybrané služby dostupné přes Cloudflare Tunnel: spojení navazuje domácí server směrem ven a&nbsp;doma není potřeba otevírat žádné porty.</p>
   </div>

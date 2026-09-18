@@ -30,11 +30,13 @@ Zásady: web funguje i bez dat a bez JavaScriptu; nezávisí na backendech aplik
 
 ## Homepage
 
-Pořadí: hlavička → Úvod → Čemu se věnuji → Teď → Poznámky (max. 3 nejnovější, datum a název) → (Stav) → patička.
+Pořadí: hlavička → Úvod → Čemu se věnuji → Teď → Poznámky (max. 3 nejnovější, datum a název) → Počasí → (Stav) → patička.
 
 - **Úvod** – nadpis je jedna popisná věta, pod ní 1–2 věty a odkaz na GitHub. Bez jména, fotky a tlačítek.
 - **Čemu se věnuji** – 3–4 oblasti (název + 1–2 věty), projekty jen jako kontextové odkazy.
 - **Teď** – 3–5 bodů s datem poslední aktualizace.
+- **Počasí** – místo, aktuální teplota s popisem, vlhkost a vítr, 3 dny (min / max, popis),
+  čas aktualizace a „Data: Open-Meteo“. Bez barevné karty a ikon; nevykreslí se bez dat (od v1.2).
 - **Stav** – max. 4 hodnoty s časem měření. Nevykreslí se, dokud nejsou skutečná data.
 - Na homepage záměrně nejsou dlaždice projektů, loga technologií ani grafy.
 
@@ -116,6 +118,52 @@ Fáze 1 – veřejný portál bez dat:
   Barvy manifestu jsou statické výchozí; lištu prohlížeče řídí dynamické `<meta name="theme-color">`.
 - [x] Poznámky: vlastní title, description, canonical, `og:type=article`, `og:url`
 - [x] Kontroly nasazení a balíčku rozšířené o poznámky, feed a manifest
+
+## v1.2 – počasí
+
+První skutečně dynamická veřejná data. Rozhodnutí autora:
+
+- Zdroj: Open-Meteo (Forecast a Geocoding API), nekomerční osobní web, viditelná atribuce
+  „Data: Open-Meteo“ s odkazem (data CC BY 4.0).
+- Prohlížeč návštěvníka nikdy nekomunikuje s Open-Meteo – všechno volá PHP na serveru,
+  prohlížeč mluví jen s mh42.cz.
+- Výchozí místo je Třebíč – veřejné centrum města (49.216, 15.880), ne adresa bydliště.
+  Poloha autora se nikde nevymýšlí ani neodhaduje.
+- Tři režimy: výchozí Třebíč (server, funguje bez JavaScriptu), ruční hledání města
+  (i zahraničního) a volitelně poloha zařízení přes standardní Geolocation API – jen po
+  kliknutí, bez automatické žádosti o oprávnění, zaokrouhlená na 2 desetinná místa, s názvem
+  „Moje poloha“ (bez reverse geocodingu).
+- Hledání: pole „Místo“ pro město, obec nebo jiný název místa. PSČ se nenabízí – česká PSČ
+  Open-Meteo spolehlivě nenachází a kvůli nim nevznikne integrace další služby. Jeden
+  výsledek se vybere rovnou; jiná místa než výchozí používají `timezone=auto`.
+- Volba místa jen v `localStorage`, žádné cookies; „zpět na Třebíč“ ji smaže.
+- Server neukládá přesnou polohu, historii poloh ani dotazy; cache je jen poslední stav
+  pro zaokrouhlené souřadnice pod jejich otiskem.
+- Cache: platnost 15 minut; při výpadku API poslední dobrá data s neutrálním „data z …“,
+  zobrazená nejvýš 6 hodin stará; bez dat se sekce nevykreslí. Fyzická retence je jiná věc
+  než stáří zobrazitelných dat: soubor se maže až po 7 dnech, souborů je nejvýš 500
+  (navíc se mažou nejstarší). Jedno místo = jeden soubor, úklid při zápisu, bez databáze;
+  právě zapsaný soubor a Třebíč jsou při úklidu chráněné.
+- Vlastní strop dotazů na Open-Meteo vyvolaných návštěvníky: 30 za minutu, 1 500 za den –
+  ochrana endpointů před zneužitím, ne kopie limitů Open-Meteo. Třebíč mimo strop
+  (omezuje ji cache). Strop drží jen dva čítače, žádné IP adresy ani historii.
+- Model soukromí se nemění: poloha se zaokrouhluje v prohlížeči i na serveru, tělo
+  požadavku se neloguje, název souboru cache je otisk souřadnic, cache neobsahuje
+  souřadnice, žádná historie poloh, cookies ani analytika.
+- Vzhled: sekce technického listu, žádná weather karta ani dashboard; aktuální teplota
+  je nejvýraznější číslo. Význam nikdy jen barvou nebo ikonou.
+
+- [x] `config/app.php` – `weather` (Třebíč, Europe/Prague, cache 900 s); bez platného nastavení se nic nevykreslí
+- [x] `src/weather.php` – Open-Meteo, normalizovaný model, kódy WMO → čeština, cache, výpadky, strop dotazů
+- [x] `src/http.php` – HTTP klient bez knihoven (curl, záložně streamy), timeouty, limit velikosti
+- [x] `public/api/pocasi/`, `public/api/mista/` – POST JSON endpointy s validací, no-store
+- [x] Sekce Počasí na úvodní stránce (šablony `weather.php`, `weather-data.php`)
+- [x] `public/assets/js/weather.js` – změna místa, hledání, poloha zařízení, `localStorage`
+- [x] `Permissions-Policy: geolocation=(self)`, ostatní omezení beze změny
+- [x] O mně, „Jak tenhle web běží“: věta o počasí z Open-Meteo a o tom, že prohlížeč komunikuje jen s mh42.cz
+- [x] Testy bez Open-Meteo (`tools/test-pocasi.php`, `tools/test-pocasi-web.py`), kontrola balíčku a nasazení
+- [ ] Jednorázová diagnostika WEDOS (odchozí HTTPS na Open-Meteo, zápis ve `var/`), viz `docs/nasazeni.md`
+- [ ] Nasazení na WEDOS (A2 delta + `var/`), viz `docs/nasazeni.md`
 
 Fáze 2 – data: komponenta Stav, `api/ingest.php`, publisher.
 Fáze 3 – domácí server: Tunnel, Access, VPN, přesun portálu.

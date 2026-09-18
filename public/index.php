@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 require __DIR__ . '/_app.php';
 require APP_ROOT . '/src/notes.php';
+require APP_ROOT . '/src/weather.php';
+
+$weather = weather_home();   // null = sekce Počasí se nevykreslí
 
 page_start([
     'key'         => 'home',
     'path'        => '/',
     'description' => 'Osobní web mh42 – domácí server, domácí automatizace a vlastní aplikace.',
+    'scripts'     => $weather !== null ? ['js/weather.js'] : [],
 ]);
 
 $github = config('github_url');
@@ -77,6 +81,10 @@ $latestNotes = array_slice(load_notes(), 0, 3);
     <p class="note-list__all"><a class="more" href="/poznamky/">všechny poznámky</a></p>
   </div>
 </section>
+<?php endif; ?>
+<?php if ($weather !== null): ?>
+
+<?php template('weather', ['weather' => $weather]); ?>
 <?php endif; ?>
 
 <?php page_end();

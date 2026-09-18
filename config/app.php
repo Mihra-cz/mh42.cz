@@ -23,4 +23,18 @@ return [
         ['key' => 'projekty', 'label' => 'Projekty', 'href' => '/projekty/'],
         ['key' => 'poznamky', 'label' => 'Poznámky', 'href' => '/poznamky/'],
     ],
+
+    // Počasí na úvodní stránce – data z Open-Meteo načítá server (src/weather.php).
+    // Výchozí místo je veřejné centrum města, ne adresa bydliště. Když je enabled false
+    // nebo chybí název či souřadnice, sekce se vůbec nevykreslí.
+    'weather' => [
+        'enabled'   => true,
+        'default'   => [
+            'label'     => 'Třebíč',
+            'latitude'  => 49.216,
+            'longitude' => 15.880,
+        ],
+        'timezone'  => 'Europe/Prague',
+        'cache_ttl' => 900,   // sekund
+    ],
 ];

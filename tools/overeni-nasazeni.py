@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """Technická kontrola nasazeného webu přes HTTP(S) – stavy, hlavičky, assety, cache, přesměrování.
 
+Počasí se kontroluje bez vlastního dotazu na Open-Meteo: úvodní stránka a /api/pocasi/ pro
+výchozí místo berou data z cache serveru; neplatné vstupy endpoint odmítne dřív, než by se ptal API.
+
+Cache-Control se vyhodnocuje ze všech výskytů hlavičky (tools/hlavicky.py) – WEDOS
+k dynamickým odpovědím přidává vlastní „max-age=300“, rozhoduje význam direktiv, ne pořadí.
+
 Spuštění:
   python3 tools/overeni-nasazeni.py                      # produkce https://mh42.cz
   python3 tools/overeni-nasazeni.py http://localhost:8080 --lokalne   # bez HTTPS/www/Cloudflare kontrol
 """
-import hashlib, json, re, secrets, struct, sys, urllib.error, urllib.parse, urllib.request
+import hashlib, json, re, secrets, struct, sys, time, urllib.error, urllib.parse, urllib.request
+from pathlib import Path
+
+from hlavicky import api_cache_ok, cache_text, html_cache_ok, static_cache_ok
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from xml.dom import minidom
@@ -26,8 +35,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 OPENER = urllib.request.build_opener(NoRedirect)
 
 
-def fetch(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'mh42-overeni/1.0'})
+def fetch(url, data=None, headers=None):
+    req = urllib.request.Request(url, data=data, headers={'User-Agent': 'mh42-overeni/1.0', **(headers or {})})
     try:
         resp = OPENER.open(req, timeout=20)
         status, headers, body = resp.status, resp.headers, resp.read()
@@ -70,11 +79,12 @@ for path in (f'/neexistuje-{rnd}/', f'/neexistuje-{rnd}.php', f'/neexistuje-{rnd
     report(status == 404 and NOT_FOUND_MARK in body.decode('utf-8', 'replace'), f'{path} → {status}')
 
 section('Interní soubory nesmí být dostupné')
-for path in ('/src/', '/src/bootstrap.php', '/src/helpers.php', '/src/templates/page-start.php',
+for path in ('/src/', '/src/bootstrap.php', '/src/helpers.php', '/src/templates/page-start.php', '/src/weather.php',
              '/config/', '/config/app.php', '/config/asset-versions.php', '/content/', '/content/projects.json',
+             '/var/', '/var/.htaccess', '/var/weather/', '/var/weather/budget.json', '/api/',
              '/.htaccess', '/public/', '/public/index.php'):
     status, _, body = fetch(BASE + path)
-    leak = any(s in body for s in (b'<?php', b'base_url', b'"projects"', b'ErrorDocument'))
+    leak = any(s in body for s in (b'<?php', b'base_url', b'"projects"', b'ErrorDocument', b'"fetched_at"', b'"minute"'))
     report(status in (403, 404) and not leak, f'{path} → {status}' + (' – OBSAH UNIKÁ' if leak else ''))
 
 # ---------- hlavičky ----------
@@ -83,11 +93,13 @@ csp = home_headers.get('Content-Security-Policy', '')
 report("default-src 'self'" in csp and "frame-ancestors 'none'" in csp and "object-src 'none'" in csp, f'CSP: {csp}')
 report(home_headers.get('X-Content-Type-Options') == 'nosniff', 'X-Content-Type-Options: nosniff')
 report(home_headers.get('Referrer-Policy') == 'strict-origin-when-cross-origin', f'Referrer-Policy: {home_headers.get("Referrer-Policy")}')
-report(bool(home_headers.get('Permissions-Policy')), f'Permissions-Policy: {home_headers.get("Permissions-Policy")}')
+report(home_headers.get('Permissions-Policy') == 'camera=(), microphone=(), geolocation=(self), payment=(), usb=()',
+       f'Permissions-Policy: {home_headers.get("Permissions-Policy")}')
 report(home_headers.get('X-Frame-Options') == 'DENY', 'X-Frame-Options: DENY')
 report(home_headers.get('X-Powered-By') is None, f'X-Powered-By: {home_headers.get("X-Powered-By") or "neposílá se"}')
-cc = home_headers.get('Cache-Control', '')
-report('no-cache' in cc and 'immutable' not in cc, f'HTML Cache-Control: {cc}')
+report(html_cache_ok(home_headers), f'HTML Cache-Control: {cache_text(home_headers)} (vyžaduje no-cache, přidaný max-age nevadí)')
+if home_headers.get('Expires'):
+    report(True, f'Expires (přidává hosting): {home_headers.get("Expires")}', info=True)
 hsts = home_headers.get('Strict-Transport-Security')
 report(not hsts or 'includesubdomains' not in hsts.lower(), f'HSTS: {hsts or "zatím není (záměrně)"}')
 
@@ -103,9 +115,9 @@ def check_asset(url, version_len=None):
     status, headers, body = fetch(url)
     ext = urllib.parse.urlparse(url).path.rsplit('.', 1)[-1]
     ctype = headers.get('Content-Type', '')
-    cache = headers.get('Cache-Control', '')
+    cache = cache_text(headers)
     ok = status == 200 and TYPES.get(ext, '') in ctype
-    ok = ok and (('max-age=31536000' in cache and 'immutable' in cache) if ext in LONG else 'max-age=604800' in cache)
+    ok = ok and (static_cache_ok(headers, 31536000, immutable=True) if ext in LONG else static_cache_ok(headers, 604800))
     note = ''
     query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get('v', [''])[0]
     if version_len and query:
@@ -145,8 +157,8 @@ for loc in locs:
 
 section('Atom feed (/feed.atom)')
 status, headers, body = fetch(BASE + '/feed.atom')
-report(status == 200 and 'application/atom+xml' in headers.get('Content-Type', '') and 'max-age=3600' in headers.get('Cache-Control', ''),
-       f'/feed.atom → {status}, {headers.get("Content-Type")}, {headers.get("Cache-Control")}')
+report(status == 200 and 'application/atom+xml' in headers.get('Content-Type', '') and static_cache_ok(headers, 3600),
+       f'/feed.atom → {status}, {headers.get("Content-Type")}, {cache_text(headers)}')
 ATOM = '{http://www.w3.org/2005/Atom}'
 try:
     root = ET.fromstring(body)
@@ -197,6 +209,56 @@ for item in manifest.get('icons', []):
     report(s == 200 and f'{size[0]}x{size[1]}' == item['sizes'] and 'image/png' in h.get('Content-Type', '')
            and (purpose != 'maskable' or opaque),
            f'  {item["src"]} ({purpose}) → {s}, {size[0]}x{size[1]}' + (', neprůhledná' if opaque else ''))
+
+section('Počasí (bez vlastního dotazu na Open-Meteo)')
+config = (Path(__file__).resolve().parent.parent / 'config' / 'app.php').read_text(encoding='utf-8')
+weather_block = re.search(r"'weather'\s*=>\s*\[(.*?)\n    \],", config, re.S)
+weather_on = bool(weather_block and re.search(r"'enabled'\s*=>\s*true", weather_block.group(1)))
+lat = float(re.search(r"'latitude'\s*=>\s*([-0-9.]+)", weather_block.group(1)).group(1)) if weather_block else 0.0
+lon = float(re.search(r"'longitude'\s*=>\s*([-0-9.]+)", weather_block.group(1)).group(1)) if weather_block else 0.0
+tags = re.findall(r'<(?:script|link)\b[^>]*>', html_home)
+loaded = [re.search(r'(?:src|href)="([^"]+)"', t).group(1) for t in tags
+          if re.search(r'<script|rel="(?:stylesheet|icon|apple-touch-icon|manifest|preload|modulepreload)"', t)]
+report(loaded and all(u.startswith('/') for u in loaded), f'prohlížeč načítá jen z vlastního webu ({len(loaded)} souborů z <head>)')
+report(html_home.count('open-meteo') == html_home.count('href="https://open-meteo.com/"'), 'Open-Meteo je v HTML jen jako odkaz atribuce')
+if weather_on:
+    section_ok = 'data-weather>' in html_home and '<h2 id="pocasi" class="section__title">Počasí</h2>' in html_home
+    report(section_ok, 'úvodní stránka: sekce Počasí' + ('' if section_ok else ' CHYBÍ – server nemá data (curl/odchozí HTTPS, var/)'))
+    report('Data: <a class="ext" href="https://open-meteo.com/">Open-Meteo</a>' in html_home, 'atribuce „Data: Open-Meteo“ s odkazem')
+    coords = {f'{lat:.3f}', f'{lon:.3f}', f'{lat:.2f}', f'{lon:.2f}', str(lat), str(lon)}
+    report(not any(c in html_home for c in coords), 'v HTML nejsou souřadnice výchozího místa')
+    report(re.search(r'<script src="/assets/js/weather\.js\?v=[0-9a-f]+" defer>', html_home) is not None, 'weather.js (defer, verze v adrese)')
+    stamps = []
+    for _ in range(2):
+        _, _, body = fetch(BASE + '/')
+        m = re.search(r'<p class="weather__updated">(aktualizováno|data z) <time datetime="([^"]+)">([^<]+)</time>', body.decode('utf-8', 'replace'))
+        stamps.append(m.groups() if m else None)
+        time.sleep(2)
+    report(stamps[0] and stamps[0] == stamps[1], 'cache počasí funguje (dvě načtení → stejný čas dat, var/ je zapisovatelná)'
+           if stamps[0] and stamps[0] == stamps[1] else f'CACHE NEFUNGUJE – zkontroluj oprávnění var/ ({stamps})')
+    report(bool(stamps[0]) and stamps[0][0] == 'aktualizováno', f'čerstvá data: {" ".join(stamps[0][::2]) if stamps[0] else "—"}'
+           + ('' if stamps[0] and stamps[0][0] == 'aktualizováno' else ' – Open-Meteo teď neodpovídá serveru'))
+
+    api, json_type = BASE + '/api/pocasi/', {'Content-Type': 'application/json'}
+    status, headers, _ = fetch(api)
+    report(status == 405 and headers.get('Allow') == 'POST', f'GET /api/pocasi/ → {status}')
+    status, _, _ = fetch(api, b'{"lat":49.22,"lon":15.88}', {'Content-Type': 'text/plain'})
+    report(status == 415, f'POST text/plain → {status}')
+    status, headers, body = fetch(api, b'{"lat":999,"lon":0}', json_type)
+    report(status == 400 and api_cache_ok(headers) and 'application/json' in headers.get('Content-Type', ''),
+           f'neplatné souřadnice → {status}, {headers.get("Content-Type")}, {cache_text(headers)}')
+    status, _, _ = fetch(api, b'{"lat":49.22,"lon":15.88}', {**json_type, 'Sec-Fetch-Site': 'cross-site'})
+    report(status == 403, f'požadavek z cizího webu → {status}')
+    status, headers, body = fetch(api, json.dumps({'lat': lat, 'lon': lon}).encode(), json_type)
+    reply = json.loads(body) if status == 200 else {}
+    report(status == 200 and '°C' in reply.get('html', '') and api_cache_ok(headers),
+           f'výchozí místo přes /api/pocasi/ (z cache) → {status}, {cache_text(headers)}')
+    status, _, _ = fetch(BASE + '/api/mista/')
+    report(status == 405, f'GET /api/mista/ → {status}')
+    status, _, _ = fetch(BASE + '/api/mista/', b'{"q":"B"}', json_type)
+    report(status == 400, f'příliš krátký dotaz na místo → {status} (na API se neposílá)')
+else:
+    report('data-weather' not in html_home and 'weather.js' not in html_home, 'počasí vypnuté: úvodní stránka bez sekce a bez skriptu')
 
 section('Odkazy a přesměrování')
 report('href="https://github.com/Mihra-cz"' in html_home and 'target="_blank"' not in html_home,

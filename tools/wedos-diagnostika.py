@@ -56,7 +56,7 @@ header("Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()');
 header('Cache-Control: no-cache');
 echo "mh42-hlavicky-ok\n";
 """

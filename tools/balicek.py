@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Sestaví produkční balíček webu do dist/.
 
-Varianta A (preferovaná): public/ je kořen webu, src/ config/ content/ leží vedle něj
-(mimo web). Varianta B (záložní): všechno v jednom veřejném adresáři – obsah public/
-v kořeni, src/ config/ content/ jako podsložky se zákazem přístupu z webu.
+Varianta A (preferovaná): public/ je kořen webu, src/ config/ content/ var/ leží vedle
+něj (mimo web). Varianta B (záložní): všechno v jednom veřejném adresáři – obsah public/
+v kořeni, src/ config/ content/ var/ jako podsložky se zákazem přístupu z webu.
+var/ je pro běhová data (cache počasí) – v balíčku je prázdná, jen s .htaccess.
 
 Před sestavením ověří, že vygenerované soubory (robots.txt, sitemap.xml, feed.atom,
-manifest, ikony, OG obrázek, dlaždice pozadí) existují a sedí s konfigurací a poznámkami.
+manifest, ikony, OG obrázek, dlaždice pozadí) existují a sedí s konfigurací a poznámkami,
+a spustí testy počasí (tools/test-pocasi.php – nastavení, cache, výpadky API, úvodní
+stránka se zapnutým i vypnutým počasím; bez sítě). PHP kontroly běží v Dockeru.
 Otisky assetů zapíše do config/asset-versions.php (verze v adresách podle obsahu).
 
 Spuštění: python3 tools/balicek.py [--bez-lintu]
 """
-import hashlib, json, re, shutil, struct, subprocess, sys, time, zipfile
+import hashlib, json, os, re, shutil, struct, subprocess, sys, time, zipfile
 from pathlib import Path
 from xml.dom import minidom
 
@@ -119,6 +122,19 @@ def preflight(lint):
         except (OSError, subprocess.TimeoutExpired) as exc:
             print(f'  pozor PHP lint se nespustil ({exc}); spusť se --bez-lintu nebo zkontroluj ručně')
 
+        # Počasí: platné nastavení v config/app.php, cache a výpadky API s podvrženým klientem,
+        # úvodní stránka s vypnutým počasím (bez sekce) i se zapnutým a cache z fixture (se sekcí).
+        cmd = ['docker', 'run', '--rm', '--user', f'{os.getuid()}:{os.getgid()}', '-v', f'{ROOT}:/app:ro', '-w', '/app',
+               'php:8.3-cli-alpine', 'php', 'tools/test-pocasi.php']
+        try:
+            run = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+            lines = run.stdout.strip().splitlines()
+            failed = [line.strip() for line in lines if line.strip().startswith('CHYBA')]
+            summary = lines[-1] if lines else run.stderr.strip()[-300:]
+            check(run.returncode == 0, f'testy počasí (tools/test-pocasi.php): {summary}' + (f' – {failed[:3]}' if failed else ''))
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f'  pozor testy počasí se nespustily ({exc}); spusť ručně: php tools/test-pocasi.php')
+
 
 def copy_public(target):
     for src in PUBLIC.rglob('*'):
@@ -135,6 +151,11 @@ def copy_app(target):
         shutil.copytree(ROOT / name, target / name)
     (target / 'config').mkdir(parents=True)
     shutil.copy2(ROOT / 'config' / 'app.php', target / 'config' / 'app.php')   # nikdy local.php
+    # var/ – běhová data (cache počasí). Obsah z vývoje se nikdy nebalí; na serveru musí
+    # být složka zapisovatelná pro PHP (viz docs/nasazeni.md). .htaccess chrání variantu B
+    # a pro jistotu i A, kdyby se var/ ocitla v kořeni webu.
+    (target / 'var').mkdir()
+    (target / 'var' / '.htaccess').write_text(DENY_HTACCESS, encoding='utf-8')
 
 
 def write_versions(config_dir):

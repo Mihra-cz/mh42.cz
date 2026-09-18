@@ -39,6 +39,126 @@ navigace a Poznámky v pořádku; žádný horizontální overflow, žádné chy
 **Cache:** HTML `no-cache`; CSS/JS/písma rok + `immutable`; obrázky týden; verze
 v adresách (`?v=`) sedí s otiskem obsahu.
 
+## v1.2 – počasí (připraveno, zatím nenasazeno)
+
+Počasí z Open-Meteo na úvodní stránce, změna místa (hledání, poloha zařízení), endpointy
+`/api/pocasi/` a `/api/mista/` a věta o počasí na stránce O mně. Jak funguje, je v `README.md`
+(sekce Počasí), rozhodnutí v `docs/navrh.md`. Na produkci je dál v1.1.
+
+**Balíček:** `dist/mh42-2026-09-18-2120/A-oddeleny-koren/`, pořadí nahrávání a rollback
+v `NASAZENI-v1.2.md` tamtéž. Delta proti v1.1 (`dist/mh42-2026-09-18-1856/`) podle SHA-256:
+**9 nových + 7 změněných souborů, nic se nemaže.** Součástí je `config/asset-versions.php`
+(nové CSS a `weather.js`). Cloudflare purge není potřeba – změněné assety mají novou adresu.
+
+| Nové | Změněné |
+|---|---|
+| `var/.htaccess` (vytvoří složku `var/`) | `config/app.php` (nastavení `weather`) |
+| `src/weather.php`, `src/http.php`, `src/api.php` | `config/asset-versions.php` |
+| `src/templates/weather.php`, `src/templates/weather-data.php` | `src/helpers.php` (`geolocation=(self)`, skripty stránky) |
+| `www/api/pocasi/index.php`, `www/api/mista/index.php` | `src/templates/page-start.php` |
+| `www/assets/js/weather.js` | `www/index.php` (sekce Počasí), `www/o-mne/index.php` (věta o počasí), `www/assets/css/components.css` |
+
+**Meze cache** (podrobně v README): platnost 15 minut · data po výpadku API se zobrazí nejvýš
+6 hodin stará · soubor se fyzicky maže po 7 dnech · nejvýš 500 souborů. Vlastní strop dotazů
+návštěvníků na Open-Meteo: 30 za minutu, 1 500 za den (ochrana endpointů; Třebíč mimo strop).
+
+### Krok 0 – jednorázová diagnostika (před nahráním v1.2)
+
+Diagnostika v1 neověřovala odchozí HTTPS ani zápis z PHP, proto se obojí ověří
+předem malým skriptem. Je jen v ignorované složce `dist/wedos-diagnostika-v1.2/`
+(postup v `NAVOD.md` tamtéž, adresa s tokenem v `nastaveni.json`), **není v Gitu**.
+
+Ověří jen:
+1. HTTPS GET z PHP na `api.open-meteo.com` a `geocoding-api.open-meteo.com` – stav 200, platný JSON,
+2. ve `<FTP_ROOT>/var/`: vytvoření podsložky `weather/`, zápis souboru, atomické přepsání přes
+   `rename()` a smazání souboru (i podsložky, pokud ji vytvořila diagnostika).
+
+Nevypisuje phpinfo, absolutní cesty, proměnné prostředí, cookies ani tokeny. Výstup:
+
+```
+Open-Meteo forecast HTTPS: OK (HTTP 200, JSON, curl)
+Open-Meteo geocoding HTTPS: OK (HTTP 200, JSON, curl)
+var/ mkdir weather/ + write + rename + delete: OK
+```
+
+Postup: vytvořit `<FTP_ROOT>/var/` (755) → nahrát složku `mh42-diag-…/` do `www/` → otevřít
+adresu z `NAVOD.md` → **hned smazat `www/mh42-diag-…/`**. Když něco selže, skript vypíše
+krok, hlášku PHP bez cest a u souborů oprávnění složky a zda patří uživateli, pod kterým
+běží PHP. **Nic se automaticky neopravuje a 777 se nepoužívá** – nejdřív se rozebere
+skutečná chyba, teprve potom se rozhodne o dalším postupu.
+
+**Výsledek – diagnostika provedena 2026-09-18:**
+
+| Kontrola | Výsledek |
+|---|---|
+| Forecast API (`api.open-meteo.com`) přes HTTPS | OK – HTTP 200, platný JSON |
+| Geocoding API (`geocoding-api.open-meteo.com`) přes HTTPS | OK – HTTP 200, platný JSON |
+| HTTP klient PHP na WEDOS | curl (záložní PHP streamy nejsou potřeba) |
+| `var/`: vytvoření `weather/` + zápis + `rename()` + smazání | OK |
+| Úklid po testu | diagnostika po sobě nezanechala žádnou cache počasí (testovací soubor i podsložku smazala) |
+| Veřejná diagnostická složka | po testu odstraněna z `www/` (adresa vrací 404 webu) |
+
+`<FTP_ROOT>/var/` na hostingu zůstává pro produkční cache počasí. Produkční předpoklady v1.2
+jsou splněné, jakmile autor potvrdí oprávnění `var/` **755** (úspěch zápisu při 755
+zároveň potvrzuje, že PHP běží pod účtem webhostingu).
+
+### Známé chování WEDOS: druhá hlavička Cache-Control
+
+WEDOS k dynamickým odpovědím PHP (stav 200) přidává vlastní `Cache-Control: max-age=300`
+a `Expires` přibližně +5 minut. Aplikace současně posílá vlastní hlavičku – HTML
+`no-cache`, JSON z API `no-store` – takže odpověď má dvě hlavičky Cache-Control:
+
+```
+Cache-Control: no-cache
+Cache-Control: max-age=300
+```
+
+Není to blocker v1.2: `no-cache` dál vyžaduje revalidaci, Cloudflare HTML necachuje
+a API používá POST s `no-store`, který má přednost. Statické soubory druhou hlavičku
+nedostávají (jen `Expires`, viz výše). `tools/overeni-nasazeni.py` proto vyhodnocuje
+direktivy ze všech výskytů hlavičky (`tools/hlavicky.py`), ne jen z první.
+Odstranění duplicitní hlavičky je samostatný polish **až po nasazení v1.2** a jen po
+bezpečném testu na WEDOS – kvůli kosmetice se `.htaccess` před vydáním nemění.
+
+### Složka `var/` na WEDOS (A2)
+
+```
+<FTP_ROOT>/
+├── src/  config/  content/   aplikace (mimo web)
+├── var/                      běhová data – zapisuje PHP (nové ve v1.2)
+│   └── weather/              vytvoří PHP samo: <sha256>.json, budget.json
+└── www/                      kořen webu
+```
+
+- `var/` leží vedle `www/`, mimo veřejný kořen webu (kontrola ověří `/var/…` → 404).
+  `var/.htaccess` se zákazem přístupu je pojistka pro variantu B.
+- PHP-FPM v ní potřebuje: **vytvořit podsložku `weather/`, zapsat soubor, přejmenovat ho
+  (`rename()` přes existující soubor) a smazat soubor** – přesně to ověří krok 0.
+- Oprávnění: **755** (`rwxr-xr-x`), vlastník = účet webhostingu. **777 nepoužívat.**
+  Předpoklad, že PHP běží pod stejným uživatelem jako FTP, potvrdí krok 0.
+- PHP vytváří `var/weather/` a soubory s právy podle umask (typicky 755 / 644).
+- Obsah `var/` se nezálohuje, nenahrává ani nepřenáší – je to jen cache, po smazání se
+  sama obnoví. Staré soubory a přebytek nad 500 maže PHP samo.
+
+### Kontrola po nahrání
+
+1. `python3 tools/overeni-nasazeni.py` – navíc ověří sekci Počasí, atribuci, že v HTML nejsou
+   souřadnice, `weather.js`, `Permissions-Policy: … geolocation=(self) …`, validaci
+   `/api/pocasi/` a `/api/mista/` (405 / 415 / 400 / 403, `no-store`), `/var/…` → 404
+   a že cache funguje: dvě načtení úvodní stránky 2 s po sobě musí mít stejný čas dat.
+   Vlastní dotaz na Open-Meteo kontrola nevyvolá (výchozí místo jde z cache).
+2. Přes FTP: ve `<FTP_ROOT>/var/weather/` je po prvním načtení soubor `<64 znaků>.json`.
+3. Vizuální kontrola v headless Chromiu (motivy, mobil, změna místa, žádné cizí požadavky,
+   žádné cookies).
+
+### Rollback v1.2 → v1.1
+
+- Rychlý: nahrát `config/app.php` z balíčku v1.1 (nebo v něm nastavit `'enabled' => false`)
+  – sekce zmizí, endpointy vrací 404, nic dalšího se nemění.
+- Úplný: nahrát 7 změněných souborů z `dist/mh42-2026-09-18-1856/A-oddeleny-koren/`
+  (`config/asset-versions.php` jako první) a smazat 9 nových souborů a složku `var/`.
+  Podrobně v `NASAZENI-v1.2.md`.
+
 ## Finální stav produkce v1
 
 **Kontrola:** `tools/overeni-nasazeni.py` → **67 ok, 0 chyb** (po finálních změnách
@@ -85,6 +205,7 @@ Zástupné názvy: `<FTP_ROOT>` = kořen FTP účtu webhostingu (na WEDOS tvaru
    v `dist/mh42-<datum>/`.
 3. Nahrát přes FTP **v binárním režimu** změněné soubory z `A-oddeleny-koren/`:
    obsah `public/` do `www/`, `src/`, `config/`, `content/` vedle `www/`.
+   `var/` jen vytvořit (od v1.2, zapisovatelná pro PHP) – její obsah se nikdy nenahrává.
    Při každé změně assetů nahrát i `config/asset-versions.php` – jinak zůstanou staré
    adresy (a staré verze v cache).
 4. `python3 tools/overeni-nasazeni.py` – musí skončit bez chyb.
@@ -332,3 +453,5 @@ postupně prodlužovat.
 | dlaždice pozadí | týden | `?v=<otisk>` zapisuje do `tokens.css` `tools/pozadi-pcb.py` |
 | písma `.woff2` | rok + `immutable` | při změně písma se soubory **přejmenují** |
 | `favicon.ico`, `og-image.png` | týden | pevná adresa bez verze |
+| JSON z `/api/pocasi/`, `/api/mista/` | `no-store` | odpověď pro konkrétní místo, jen POST – necachuje prohlížeč ani Cloudflare |
+| Počasí na serveru | `var/weather/`, 15 minut | cache aplikace, ne HTTP – HTML dál `no-cache` |

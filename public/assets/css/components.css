@@ -192,3 +192,205 @@
 }
 
 .back::before { content: "\2190\00a0"; content: "\2190\00a0" / ""; }
+
+/* ---------- Počasí ---------- */
+/* Místo a ovládání na jednom řádku, pod nimi aktuální stav, tabulka dní a zdroj.
+   Bez karty a bez barevných stavů – jen typografie jako ve zbytku listu. */
+
+.weather__place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1.25rem;
+}
+
+.weather__location {
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.weather__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.25rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+.weather__controls[hidden] { display: none; }
+
+/* Tlačítka, která vypadají jako odkazy (akce na stránce, ne přechod jinam). */
+.weather__link,
+.weather__result {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.weather__link,
+.weather__result-name {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+}
+.weather__link:hover,
+.weather__result:hover .weather__result-name { color: var(--accent); text-decoration-color: currentColor; }
+.weather__link[hidden] { display: none; }
+
+/* Formulář změny místa – zobrazí se až po kliknutí na „změnit místo“. */
+.weather__form { margin-top: 1rem; }
+.weather__form[hidden] { display: none; }
+
+.weather__label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.weather__search {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 26rem;
+}
+
+.weather__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--muted);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.weather__button {
+  flex: 0 0 auto;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--muted);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  cursor: pointer;
+}
+.weather__button:hover { border-color: var(--accent); color: var(--accent); }
+.weather__button:disabled { opacity: 0.55; cursor: default; }
+.weather__button:disabled:hover { border-color: var(--muted); color: var(--text); }
+.weather__button[hidden] { display: none; }
+
+.weather__geo { margin-top: 0.5rem; }
+
+.weather__results {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.875rem;
+  padding: 0;
+  list-style: none;
+}
+.weather__results[hidden] { display: none; }
+.weather__result { padding-block: 0.25rem; }
+.weather__result-detail { color: var(--muted); }
+
+/* Hlášení (hledání, poloha, chyba načtení) – neutrální text, žádná výstražná barva. */
+.weather__status {
+  margin-top: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--muted);
+}
+.weather__status:empty { margin: 0; }
+
+/* Údaje */
+.weather__data { margin-top: 0.75rem; }
+.weather[aria-busy="true"] .weather__data { opacity: 0.55; }
+
+.weather__now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.75rem;
+}
+
+.weather__temp {
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.weather__desc { color: var(--muted); }
+
+.weather__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+}
+.weather__meta div { display: flex; gap: 0.5em; }
+.weather__meta dt { color: var(--muted); }
+
+.weather__days {
+  margin-top: 1.25rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather__days th,
+.weather__days td {
+  padding: 0.2rem 1.5rem 0.2rem 0;
+  vertical-align: baseline;
+  text-align: left;
+}
+
+.weather__days th {
+  min-width: 5.5rem;
+  font-weight: 400;
+}
+
+.weather__days .weather__range {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  text-align: right;   /* čísla zarovnaná pod sebou */
+  white-space: nowrap;
+}
+
+.weather__days .weather__day-desc {
+  padding-right: 0;
+  color: var(--muted);
+}
+
+.weather__updated,
+.weather__source {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.weather__updated { margin-top: 1.25rem; }
+
+/* Tisk: jen údaje o počasí, bez ovládání. */
+@media print {
+  .weather__controls,
+  .weather__form,
+  .weather__status { display: none; }
+}

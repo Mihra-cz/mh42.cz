@@ -55,6 +55,9 @@ $styles = array_merge(
 <link rel="stylesheet" href="<?= e(asset($style)) ?>">
 <?php endforeach; ?>
 <script src="<?= e(asset('js/theme.js')) ?>"></script>
+<?php foreach ($page['scripts'] as $script): ?>
+<script src="<?= e(asset($script)) ?>" defer></script>
+<?php endforeach; ?>
 </head>
 <body>
 
