@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-"""Generuje rastrové obrázky webu z písma IBM Plex (potřebuje Pillow):
+"""Generuje rastrové obrázky webu z písma IBM Plex (potřebuje Pillow) a manifest:
 
-  public/favicon.ico                    16, 32 a 48 px pro prohlížeče bez SVG ikon
+  public/favicon.ico                       16, 32 a 48 px pro prohlížeče bez SVG ikon
   public/assets/img/apple-touch-icon.png   180 px pro iOS
-  public/assets/img/og-image.png        1200 × 630 px náhled pro sdílení odkazů
+  public/assets/img/icon-192.png           192 px pro web app manifest
+  public/assets/img/icon-512.png           512 px pro web app manifest (purpose any)
+  public/assets/img/icon-512-maskable.png  512 px maskable – menší číslice, rezerva v bezpečné zóně
+  public/assets/img/og-image.png           1200 × 630 px náhled pro sdílení odkazů
+  public/manifest.webmanifest              web app manifest (bez service workeru)
 
 Spuštění: python3 tools/obrazky.py
 """
+import json
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -17,6 +23,7 @@ IMG = ROOT / 'public' / 'assets' / 'img'
 
 # barvy ze světlého motivu (public/assets/css/tokens.css)
 BG = '#f6f5f1'
+BG_DARK = '#121314'    # --bg tmavého motivu
 TEXT = '#1c1c1a'
 MUTED = '#5c5a54'
 LINE = '#d9d6cc'
@@ -24,6 +31,11 @@ ACCENT = '#a8461a'
 SCHEMA = '#e8cdc5'   # linky schématu, varianta B pozadí
 
 SS = 4  # převzorkování kvůli vyhlazení hran
+
+# Maskable ikona: grafika musí ležet v kruhu o poloměru 40 % velikosti (bezpečná zóna
+# W3C); cílíme na ~26 %, aby zůstala rezerva i pro menší masky launcherů.
+MASKABLE_SAFE_ZONE = 0.40
+MASKABLE_TEXT_SCALE = 0.38   # běžné ikony 0.5
 
 
 def font(name, size):
@@ -55,16 +67,40 @@ def text(draw, xy, value, family, size, fill, align='left'):
         x += draw.textlength(run, font=fonts[key])
 
 
-def icon(size, rounded):
+def icon(size, rounded, text_scale=0.5):
     """Čtverec v barvě akcentu s číslicemi 42."""
     big = size * SS
     img = Image.new('RGBA', (big, big), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     radius = round(big * 3 / 32) if rounded else 0
     draw.rounded_rectangle((0, 0, big - 1, big - 1), radius=radius, fill=ACCENT)
-    draw.text((big / 2, big / 2 + big * 0.02), '42', font=font('IBMPlexMono-SemiBold-Latin1', round(big * 0.5)),
+    draw.text((big / 2, big / 2 + big * 0.02), '42', font=font('IBMPlexMono-SemiBold-Latin1', round(big * text_scale)),
               fill=BG, anchor='mm')
     return img.resize((size, size), Image.LANCZOS)
+
+
+def content_radius(img):
+    """Nejvzdálenější bod grafiky od středu jako podíl velikosti ikony."""
+    rgb = img.convert('RGB')
+    px, (w, h) = rgb.load(), rgb.size
+    bg = px[0, 0]
+    far = 0.0
+    for y in range(h):
+        for x in range(w):
+            if sum(abs(a - b) for a, b in zip(px[x, y], bg)) > 60:
+                far = max(far, math.hypot(x + 0.5 - w / 2, y + 0.5 - h / 2))
+    return far / w
+
+
+def maskable_icon(size):
+    """Maskable ikona: plné neprůhledné pozadí přes celou plochu, grafika v bezpečné zóně."""
+    img = icon(size, rounded=False, text_scale=MASKABLE_TEXT_SCALE).convert('RGB')
+    radius = content_radius(img)
+    corners = {img.getpixel(p) for p in ((0, 0), (size - 1, 0), (0, size - 1), (size - 1, size - 1))}
+    assert radius <= MASKABLE_SAFE_ZONE, f'maskable: grafika sahá do {radius:.1%}, bezpečná zóna je {MASKABLE_SAFE_ZONE:.0%}'
+    assert len(corners) == 1, 'maskable: pozadí nepokrývá celou plochu'
+    print(f'  maskable: grafika do {radius:.1%} poloměru (bezpečná zóna {MASKABLE_SAFE_ZONE:.0%}), pozadí neprůhledné')
+    return img
 
 
 def schema(draw, s, tx, ty, width):
@@ -140,9 +176,38 @@ def og_image():
     return img.resize((1200, 630), Image.LANCZOS)
 
 
+def manifest():
+    """Web app manifest – jediný zdroj. "id" drží identitu nainstalované aplikace nezávisle
+    na start_url. Barvy jsou statické výchozí hodnoty; lištu prohlížeče na načteném webu
+    řídí <meta name="theme-color"> podle motivu."""
+    return {
+        'id': '/',
+        'name': 'mh42.cz – osobní technický portál',
+        'short_name': 'mh42',
+        'start_url': '/',
+        'scope': '/',
+        'display': 'standalone',
+        'lang': 'cs',
+        'theme_color': BG_DARK,
+        'background_color': BG,
+        'icons': [
+            {'src': '/assets/img/icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+            {'src': '/assets/img/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+            {'src': '/assets/img/icon-512-maskable.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+        ],
+    }
+
+
 if __name__ == '__main__':
     icon(64, rounded=True).save(ROOT / 'public' / 'favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)])
     icon(180, rounded=False).convert('RGB').save(IMG / 'apple-touch-icon.png', optimize=True)
+    icon(192, rounded=False).convert('RGB').save(IMG / 'icon-192.png', optimize=True)
+    icon(512, rounded=False).convert('RGB').save(IMG / 'icon-512.png', optimize=True)
+    maskable_icon(512).save(IMG / 'icon-512-maskable.png', optimize=True)
     og_image().save(IMG / 'og-image.png', optimize=True)
-    for path in (ROOT / 'public' / 'favicon.ico', IMG / 'apple-touch-icon.png', IMG / 'og-image.png'):
+    (ROOT / 'public' / 'manifest.webmanifest').write_text(
+        json.dumps(manifest(), ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    for path in (ROOT / 'public' / 'favicon.ico', IMG / 'apple-touch-icon.png', IMG / 'icon-192.png',
+                 IMG / 'icon-512.png', IMG / 'icon-512-maskable.png', IMG / 'og-image.png',
+                 ROOT / 'public' / 'manifest.webmanifest'):
         print(f'{path.relative_to(ROOT)}  {path.stat().st_size / 1024:.1f} kB')

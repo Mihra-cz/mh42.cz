@@ -1,0 +1,25 @@
+{
+  "notes": [
+    {
+      "slug": "mh42-cz-v1",
+      "title": "mh42.cz v1: od provizorní stránky k osobnímu portálu",
+      "published": "2026-09-18",
+      "updated": "2026-09-18",
+      "summary": "Z čeho se skládá první veřejná verze tohohle webu, kde běží a co záměrně nepoužívá."
+    },
+    {
+      "slug": "proc-bez-frameworku",
+      "title": "Proč tenhle web nemá framework",
+      "published": "2026-09-18",
+      "updated": "2026-09-18",
+      "summary": "Proč si malý osobní web vystačí s PHP šablonami, obyčejným HTML a CSS a jedním malým skriptem."
+    },
+    {
+      "slug": "schema-ve-dne-pcb-v-noci",
+      "title": "Schéma ve dne, PCB v noci",
+      "published": "2026-09-18",
+      "updated": "2026-09-18",
+      "summary": "Jak vzniklo pozadí webu – elektronické schéma ve světlém motivu, deska plošných spojů v tmavém – a proč nezhoršuje čitelnost."
+    }
+  ]
+}

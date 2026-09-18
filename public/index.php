@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/_app.php';
+require APP_ROOT . '/src/notes.php';
 
 page_start([
     'key'         => 'home',
@@ -11,9 +12,8 @@ page_start([
 ]);
 
 $github = config('github_url');
+$latestNotes = array_slice(load_notes(), 0, 3);
 ?>
-<!-- PRACOVNÍ TEXT: obsah stránky je dočasný, vychází jen z faktů ze zadání. Finální znění dodá autor. -->
-
 <section class="page-intro">
   <div class="page-intro__body">
     <h1 id="uvod" class="lead">Osobní web o&nbsp;domácím serveru, automatizaci a&nbsp;několika vlastních aplikacích.</h1>
@@ -33,7 +33,7 @@ $github = config('github_url');
   <div class="section__body">
     <dl class="topics">
       <div class="topic">
-        <dt>Domácí server a HomeLab</dt>
+        <dt>Domácí server a&nbsp;HomeLab</dt>
         <dd>Server doma, bez veřejné IP adresy. Postupně na něj chci přestěhovat většinu služeb z&nbsp;běžného hostingu a&nbsp;vybrané z&nbsp;nich zpřístupnit přes Cloudflare Tunnel. <a class="more" href="/projekty/#homelab">projekt</a></dd>
       </div>
       <div class="topic">
@@ -41,7 +41,7 @@ $github = config('github_url');
         <dd>Meteostanice, senzory teploty a&nbsp;vlhkosti, spotřeba energie a&nbsp;stav domácí infrastruktury. Na jaké platformě to poběží, zatím není rozhodnuté. <a class="more" href="/projekty/#domaci-automatizace">projekt</a></dd>
       </div>
       <div class="topic">
-        <dt>Anime a manga</dt>
+        <dt>Anime a&nbsp;manga</dt>
         <dd>Vlastní evidence domácí knihovny. AnimeDB je ve vývoji, MangaDB na ni časem naváže. Aplikace nejsou veřejné, na webu je jen jejich popis. <a class="more" href="/projekty/#animedb">projekty</a></dd>
       </div>
     </dl>
@@ -55,12 +55,28 @@ $github = config('github_url');
   </div>
   <div class="section__body">
     <ul class="now">
-      <li>Stavím tenhle web.<span class="now__note">První verze poběží na běžném PHP hostingu, později se přestěhuje domů.</span></li>
-      <li>Připravuji přesun služeb z&nbsp;hostingu na domácí server.</li>
-      <li>Vybírám platformu pro domácí automatizaci – Home Assistant, nebo něco jiného.</li>
-      <li>Odděluji veřejné a&nbsp;soukromé služby.<span class="now__note">AnimeDB a&nbsp;MangaDB budou dostupné jen po přihlášení.</span></li>
+      <li>Rozšiřuji tenhle web o&nbsp;obsah a&nbsp;technické poznámky.<span class="now__note">První verze už běží veřejně na WEDOS za Cloudflare.</span></li>
+      <li>Dál vyvíjím AnimeDB.</li>
+      <li>Postupně připravuji domácí server na pozdější přesun služeb z&nbsp;hostingu.</li>
+      <li>Domácí automatizace je zatím ve fázi návrhu.</li>
     </ul>
   </div>
 </section>
+<?php if ($latestNotes !== []): ?>
+
+<section class="section">
+  <div class="section__head">
+    <h2 id="poznamky" class="section__title">Poznámky</h2>
+  </div>
+  <div class="section__body">
+    <ul class="note-list">
+<?php foreach ($latestNotes as $note): ?>
+      <li><time datetime="<?= e($note['published']) ?>"><?= e($note['published']) ?></time> <a href="<?= e(note_url($note)) ?>"><?= e_cs($note['title']) ?></a></li>
+<?php endforeach; ?>
+    </ul>
+    <p class="note-list__all"><a class="more" href="/poznamky/">všechny poznámky</a></p>
+  </div>
+</section>
+<?php endif; ?>
 
 <?php page_end();

@@ -5,13 +5,13 @@ Varianta A (preferovaná): public/ je kořen webu, src/ config/ content/ leží 
 (mimo web). Varianta B (záložní): všechno v jednom veřejném adresáři – obsah public/
 v kořeni, src/ config/ content/ jako podsložky se zákazem přístupu z webu.
 
-Před sestavením ověří, že vygenerované soubory (robots.txt, sitemap.xml, OG obrázek,
-dlaždice pozadí) existují a sedí s konfigurací. Otisky assetů zapíše do
-config/asset-versions.php (verze v adresách CSS/JS/obrázků podle obsahu).
+Před sestavením ověří, že vygenerované soubory (robots.txt, sitemap.xml, feed.atom,
+manifest, ikony, OG obrázek, dlaždice pozadí) existují a sedí s konfigurací a poznámkami.
+Otisky assetů zapíše do config/asset-versions.php (verze v adresách podle obsahu).
 
 Spuštění: python3 tools/balicek.py [--bez-lintu]
 """
-import hashlib, re, shutil, struct, subprocess, sys, time, zipfile
+import hashlib, json, re, shutil, struct, subprocess, sys, time, zipfile
 from pathlib import Path
 from xml.dom import minidom
 
@@ -54,12 +54,42 @@ def preflight(lint):
     check(env == 'production', f"config/app.php: env = '{env}'")
     check(base_url == 'https://mh42.cz', f'config/app.php: base_url = {base_url}')
 
+    # poznámky: metadata v content/notes.json, stránka v public/poznamky/<slug>/index.php
+    notes = json.loads((ROOT / 'content' / 'notes.json').read_text(encoding='utf-8'))['notes']
+    notes = sorted(notes, key=lambda n: n['published'], reverse=True)   # stabilní, jako v src/notes.php
+    slugs = [n['slug'] for n in notes]
+    pages = sorted(d.name for d in (PUBLIC / 'poznamky').iterdir() if d.is_dir())
+    check(sorted(slugs) == pages and all((PUBLIC / 'poznamky' / s / 'index.php').is_file() for s in slugs),
+          f'poznámky: notes.json ↔ public/poznamky/<slug>/ ({len(slugs)})')
+    check(len(set(slugs)) == len(slugs), 'poznámky: slugy jsou unikátní')
+
     robots = (PUBLIC / 'robots.txt').read_text(encoding='utf-8')
     check(f'Sitemap: {base_url}/sitemap.xml' in robots, 'robots.txt odkazuje na produkční sitemap')
     doc = minidom.parse(str(PUBLIC / 'sitemap.xml'))
     locs = [n.firstChild.data for n in doc.getElementsByTagName('loc')]
-    expected = [base_url + p for p in ['/'] + nav]
-    check(locs == expected, f'sitemap.xml = úvodní stránka + navigace ({len(locs)} adres)')
+    expected = [base_url + p for p in ['/'] + nav] + [f'{base_url}/poznamky/{s}/' for s in slugs]
+    check(locs == expected, f'sitemap.xml = úvodní stránka + navigace + poznámky ({len(locs)} adres)')
+
+    feed = minidom.parse(str(PUBLIC / 'feed.atom'))
+    entries = feed.getElementsByTagName('entry')
+    ids = [e.getElementsByTagName('id')[0].firstChild.data for e in entries]
+    titles = [e.getElementsByTagName('title')[0].firstChild.data for e in entries]
+    updated = [e.getElementsByTagName('updated')[0].firstChild.data[:10] for e in entries]
+    check(ids == [f'{base_url}/poznamky/{s}/' for s in slugs] and titles == [n['title'] for n in notes]
+          and updated == [n['updated'] for n in notes], 'feed.atom odpovídá content/notes.json')
+
+    manifest = json.loads((PUBLIC / 'manifest.webmanifest').read_text(encoding='utf-8'))
+    check(manifest.get('id') == '/' and manifest.get('start_url') == '/' and manifest.get('scope') == '/',
+          'manifest: id, start_url a scope = /')
+    for item in manifest['icons']:
+        path = PUBLIC / item['src'].lstrip('/')
+        data = path.read_bytes() if path.is_file() else b''
+        size = struct.unpack('>II', data[16:24]) if data else (0, 0)
+        # PNG bez alfa kanálu: typ barev 0 (šedá) nebo 2 (RGB) v hlavičce IHDR
+        opaque = len(data) > 25 and data[25] in (0, 2)
+        purpose = item.get('purpose', 'any')
+        check(f'{size[0]}x{size[1]}' == item['sizes'] and (purpose != 'maskable' or opaque),
+              f'manifest: {item["src"]} {item["sizes"]} ({purpose}' + (', neprůhledná)' if opaque else ')'))
 
     og = PUBLIC / 'assets' / 'img' / 'og-image.png'
     w, h = struct.unpack('>II', og.read_bytes()[16:24]) if og.is_file() else (0, 0)
@@ -134,7 +164,7 @@ def zip_dir(root, out):
 
 def build():
     stamp = time.strftime('%Y-%m-%d-%H%M')
-    out = DIST / f'mh42-v1-{stamp}'
+    out = DIST / f'mh42-{stamp}'
     a = out / 'A-oddeleny-koren'
     b = out / 'B-jeden-adresar'
 

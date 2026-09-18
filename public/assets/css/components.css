@@ -50,21 +50,24 @@
 /* ---------- Seznam projektů ---------- */
 /* Řádek: název vlevo, popis a údaje vpravo. Když na to není místo, popis se zalomí pod název. */
 
-.projects {
+.projects,
+.notes {
   display: grid;
   gap: 1.5rem;
   padding: 0;
   list-style: none;
 }
 
-.project {
+.project,
+.note-row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.35rem 1.5rem;
 }
 
-.project + .project {
+.project + .project,
+.note-row + .note-row {
   padding-top: 1.5rem;
   border-top: 1px dashed var(--line);
 }
@@ -119,3 +122,73 @@
   flex: 1 1 16rem;
   color: var(--muted);
 }
+
+/* ---------- Poznámky ---------- */
+/* Řádek seznamu: datum vlevo (stejný sloupec jako názvy projektů), název a popis vpravo. */
+
+.note-row__date {
+  flex: 0 0 9rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--muted);
+}
+
+.note-row__body {
+  flex: 1 1 20rem;
+  min-width: 0;
+  color: var(--muted);
+}
+
+.note-row__title {
+  margin-bottom: 0.3rem;
+  color: var(--text);
+  font-size: var(--text-term);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+/* Výběr na úvodní stránce: jen datum a název. */
+.note-list {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.note-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.25rem;
+}
+
+.note-list time {
+  flex: 0 0 7rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--muted);
+}
+
+.note-list a { flex: 1 1 16rem; }
+
+.note-list__all { margin-top: 1.25rem; }
+.note-list__all .more { margin-left: 0; }
+
+/* Konec poznámky: návrat na seznam, zarovnaný se sloupcem textu. */
+.note-end {
+  padding-block: 0 3rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+}
+
+@media (min-width: 48rem) {
+  .note-end {
+    display: grid;
+    grid-template-columns: var(--label) minmax(0, 1fr);
+    column-gap: var(--col-gap);
+  }
+  .note-end > * { grid-column: 2; }
+}
+
+.back::before { content: "\2190\00a0"; content: "\2190\00a0" / ""; }

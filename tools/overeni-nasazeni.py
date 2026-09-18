@@ -5,7 +5,9 @@ Spuštění:
   python3 tools/overeni-nasazeni.py                      # produkce https://mh42.cz
   python3 tools/overeni-nasazeni.py http://localhost:8080 --lokalne   # bez HTTPS/www/Cloudflare kontrol
 """
-import hashlib, re, secrets, struct, sys, urllib.error, urllib.parse, urllib.request
+import hashlib, json, re, secrets, struct, sys, urllib.error, urllib.parse, urllib.request
+import xml.etree.ElementTree as ET
+from datetime import datetime
 from xml.dom import minidom
 
 BASE = next((a for a in sys.argv[1:] if not a.startswith('--')), 'https://mh42.cz').rstrip('/')
@@ -49,7 +51,7 @@ def section(title):
 
 # ---------- stránky ----------
 section('Stránky')
-pages = {'/': 'Osobní web o', '/o-mne/': 'O&nbsp;mně', '/projekty/': 'Projekty'}
+pages = {'/': 'Osobní web o', '/o-mne/': 'O&nbsp;mně', '/projekty/': 'Projekty', '/poznamky/': 'Poznámky'}
 html_home = ''
 for path, mark in pages.items():
     status, headers, body = fetch(BASE + path)
@@ -92,6 +94,8 @@ report(not hsts or 'includesubdomains' not in hsts.lower(), f'HSTS: {hsts or "za
 # ---------- assety ----------
 section('Assety (verze v adrese = otisk obsahu, typ, cache)')
 TYPES = {'css': 'text/css', 'js': 'javascript', 'woff2': 'font/woff2', 'svg': 'image/svg+xml', 'png': 'image/png', 'ico': 'icon'}
+report('rel="manifest" href="/manifest.webmanifest"' in html_home, 'odkaz na manifest v <head>')
+report(f'type="application/atom+xml" title="mh42.cz – Poznámky" href="{PROD}/feed.atom"' in html_home, 'Atom autodiscovery v <head>')
 LONG = ('css', 'js', 'woff2')
 
 
@@ -112,7 +116,8 @@ def check_asset(url, version_len=None):
     return body
 
 
-refs = re.findall(r'<(?:link|script)[^>]+(?:href|src)="(/[^"]+)"', html_home)
+# manifest se kontroluje zvlášť níže
+refs = [r for r in re.findall(r'<(?:link|script)[^>]+(?:href|src)="(/[^"]+)"', html_home) if r != '/manifest.webmanifest']
 for ref in refs:
     body = check_asset(BASE + ref, 10 if '?v=' in ref else None)
     css_dir = ref.split('?')[0].rsplit('/', 1)[0]
@@ -137,6 +142,61 @@ report(status == 200 and all(u.startswith(PROD + '/') for u in locs) and locs, f
 for loc in locs:
     s, _, _ = fetch(loc.replace(PROD, BASE) if LOCAL else loc)
     report(s == 200, f'  {loc} → {s}')
+
+section('Atom feed (/feed.atom)')
+status, headers, body = fetch(BASE + '/feed.atom')
+report(status == 200 and 'application/atom+xml' in headers.get('Content-Type', '') and 'max-age=3600' in headers.get('Cache-Control', ''),
+       f'/feed.atom → {status}, {headers.get("Content-Type")}, {headers.get("Cache-Control")}')
+ATOM = '{http://www.w3.org/2005/Atom}'
+try:
+    root = ET.fromstring(body)
+    feed_ok = root.tag == ATOM + 'feed'
+except ET.ParseError as exc:
+    root, feed_ok = None, False
+    report(False, f'feed.atom není platné XML: {exc}')
+if feed_ok:
+    def rfc3339(value):
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).tzinfo is not None
+        except ValueError:
+            return False
+    one = lambda parent, tag: parent.findall(ATOM + tag)
+    self_links = [l.get('href') for l in one(root, 'link') if l.get('rel') == 'self']
+    alt_links = [l.get('href') for l in one(root, 'link') if l.get('rel') == 'alternate']
+    report(len(one(root, 'id')) == 1 and len(one(root, 'title')) == 1 and len(one(root, 'updated')) == 1
+           and rfc3339(one(root, 'updated')[0].text) and len(one(root, 'author')) >= 1,
+           'feed: právě jedno id, title a updated (RFC 3339), author')
+    report(self_links == [PROD + '/feed.atom'] and alt_links == [PROD + '/poznamky/'], f'feed: self {self_links}, alternate {alt_links}')
+    entries = one(root, 'entry')
+    entry_ids = [e.findtext(ATOM + 'id') for e in entries]
+    report(entries and len(set(entry_ids)) == len(entry_ids), f'feed: {len(entries)} položek, unikátní id')
+    for e in entries:
+        href = next((l.get('href') for l in e.findall(ATOM + 'link') if l.get('rel') == 'alternate'), '')
+        ok = all(e.findtext(ATOM + t) for t in ('title', 'id', 'summary')) and rfc3339(e.findtext(ATOM + 'published') or '') \
+            and rfc3339(e.findtext(ATOM + 'updated') or '') and href.startswith(PROD + '/poznamky/')
+        s, _, _ = fetch(href.replace(PROD, BASE) if LOCAL else href)
+        report(ok and s == 200, f'  {e.findtext(ATOM + "title")} → {s}')
+
+section('Web app manifest (/manifest.webmanifest)')
+status, headers, body = fetch(BASE + '/manifest.webmanifest')
+report(status == 200 and 'application/manifest+json' in headers.get('Content-Type', ''), f'/manifest.webmanifest → {status}, {headers.get("Content-Type")}')
+try:
+    manifest = json.loads(body)
+except ValueError as exc:
+    manifest = {}
+    report(False, f'manifest není platný JSON: {exc}')
+report(all(manifest.get(k) for k in ('id', 'name', 'short_name', 'start_url', 'scope', 'display', 'lang', 'theme_color', 'background_color', 'icons')),
+       f'manifest: {manifest.get("short_name")}, display {manifest.get("display")}, lang {manifest.get("lang")}')
+report(manifest.get('id') == '/' and manifest.get('start_url') == '/' and manifest.get('scope') == '/',
+       f'manifest: id {manifest.get("id")!r}, start_url {manifest.get("start_url")!r}, scope {manifest.get("scope")!r}')
+for item in manifest.get('icons', []):
+    s, h, b = fetch(BASE + item['src'])
+    size = struct.unpack('>II', b[16:24]) if b[:8] == b'\x89PNG\r\n\x1a\n' else (0, 0)
+    purpose = item.get('purpose', 'any')
+    opaque = len(b) > 25 and b[25] in (0, 2)   # PNG bez alfa kanálu
+    report(s == 200 and f'{size[0]}x{size[1]}' == item['sizes'] and 'image/png' in h.get('Content-Type', '')
+           and (purpose != 'maskable' or opaque),
+           f'  {item["src"]} ({purpose}) → {s}, {size[0]}x{size[1]}' + (', neprůhledná' if opaque else ''))
 
 section('Odkazy a přesměrování')
 report('href="https://github.com/Mihra-cz"' in html_home and 'target="_blank"' not in html_home,

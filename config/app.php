@@ -21,5 +21,6 @@ return [
     'nav' => [
         ['key' => 'o-mne',    'label' => 'O mně',    'href' => '/o-mne/'],
         ['key' => 'projekty', 'label' => 'Projekty', 'href' => '/projekty/'],
+        ['key' => 'poznamky', 'label' => 'Poznámky', 'href' => '/poznamky/'],
     ],
 ];

@@ -45,7 +45,9 @@ Zástupné názvy: `<FTP_ROOT>` = kořen FTP účtu webhostingu (na WEDOS tvaru
 ## Aktualizace webu (další nasazení)
 
 1. Změny udělat a ověřit lokálně (`README.md` – vývojový server, test na Apachi).
-2. `python3 tools/balicek.py` – kontrola vygenerovaných souborů a nový balíček v `dist/`.
+2. Po změně poznámek `php tools/seo-soubory.php`, po změně ikon `python3 tools/obrazky.py`;
+   pak `python3 tools/balicek.py` – kontrola vygenerovaných souborů a nový balíček
+   v `dist/mh42-<datum>/`.
 3. Nahrát přes FTP **v binárním režimu** změněné soubory z `A-oddeleny-koren/`:
    obsah `public/` do `www/`, `src/`, `config/`, `content/` vedle `www/`.
    Při každé změně assetů nahrát i `config/asset-versions.php` – jinak zůstanou staré

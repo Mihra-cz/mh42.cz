@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generováno nástrojem tools/seo-soubory.php z config/app.php. Neupravovat ručně. -->
+<!-- Generováno nástrojem tools/seo-soubory.php z config/app.php a content/notes.json. Neupravovat ručně. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://mh42.cz/</loc></url>
   <url><loc>https://mh42.cz/o-mne/</loc></url>
   <url><loc>https://mh42.cz/projekty/</loc></url>
+  <url><loc>https://mh42.cz/poznamky/</loc></url>
+  <url><loc>https://mh42.cz/poznamky/mh42-cz-v1/</loc><lastmod>2026-09-18</lastmod></url>
+  <url><loc>https://mh42.cz/poznamky/proc-bez-frameworku/</loc><lastmod>2026-09-18</lastmod></url>
+  <url><loc>https://mh42.cz/poznamky/schema-ve-dne-pcb-v-noci/</loc><lastmod>2026-09-18</lastmod></url>
 </urlset>

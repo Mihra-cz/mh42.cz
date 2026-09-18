@@ -10,6 +10,15 @@ declare(strict_types=1);
 $path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 $file = dirname(__DIR__) . '/public' . $path;
 
+// Typy, které vestavěný server nezná (na Apachi je nastavuje public/.htaccess).
+$types = ['atom' => 'application/atom+xml; charset=utf-8', 'webmanifest' => 'application/manifest+json; charset=utf-8'];
+$extension = pathinfo($path, PATHINFO_EXTENSION);
+if (is_file($file) && isset($types[$extension])) {
+    header('Content-Type: ' . $types[$extension]);
+    readfile($file);
+    return true;
+}
+
 if (is_file($file) || is_file(rtrim($file, '/') . '/index.php')) {
     return false;
 }

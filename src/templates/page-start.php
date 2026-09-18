@@ -27,7 +27,7 @@ $styles = array_merge(
 <link rel="canonical" href="<?= e($url) ?>">
 <?php endif; ?>
 
-<meta property="og:type" content="website">
+<meta property="og:type" content="<?= e($page['type']) ?>">
 <meta property="og:site_name" content="<?= e($siteName) ?>">
 <meta property="og:locale" content="cs_CZ">
 <meta property="og:title" content="<?= e($title) ?>">
@@ -49,6 +49,8 @@ $styles = array_merge(
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="<?= e(asset('img/favicon.svg')) ?>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="alternate" type="application/atom+xml" title="mh42.cz – Poznámky" href="<?= e(absolute_url('/feed.atom')) ?>">
 <?php foreach ($styles as $style): ?>
 <link rel="stylesheet" href="<?= e(asset($style)) ?>">
 <?php endforeach; ?>

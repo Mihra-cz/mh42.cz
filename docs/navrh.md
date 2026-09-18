@@ -24,13 +24,13 @@ Zásady: web funguje i bez dat a bez JavaScriptu; nezávisí na backendech aplik
 - Kontakt: GitHub. Veřejný e-mail zatím ne.
 - AnimeDB a MangaDB mohou být na stránce Projekty s krátkým popisem, ale bez odkazu
   na aplikace a bez jejich hostname. (Minimalizace propagace, ne zabezpečení.)
-- Položka Poznámky vznikne až se skutečným obsahem.
+- Položka Poznámky vznikne až se skutečným obsahem (od v1.1 – tři první poznámky).
 - Home Assistant ani podobný systém nebude veřejně dostupný; správa vzdáleně přes VPN.
 - První verze jen česky, bez infrastruktury pro více jazyků.
 
 ## Homepage
 
-Pořadí: hlavička → Úvod → Čemu se věnuji → Teď → (Stav) → patička.
+Pořadí: hlavička → Úvod → Čemu se věnuji → Teď → Poznámky (max. 3 nejnovější, datum a název) → (Stav) → patička.
 
 - **Úvod** – nadpis je jedna popisná věta, pod ní 1–2 věty a odkaz na GitHub. Bez jména, fotky a tlačítek.
 - **Čemu se věnuji** – 3–4 oblasti (název + 1–2 věty), projekty jen jako kontextové odkazy.
@@ -40,7 +40,8 @@ Pořadí: hlavička → Úvod → Čemu se věnuji → Teď → (Stav) → pati�
 
 ## Navigace
 
-`mh42` (= Domů) · O mně · Projekty · přepínač motivu. Jeden řádek i na 320 px, bez hamburgeru.
+`mh42` (= Domů) · O mně · Projekty · Poznámky · přepínač motivu. Bez hamburgeru: pod 30rem
+dva řádky (wordmark a přepínač, pod nimi navigace), od 30rem jeden řádek.
 Žádné tlačítko „Přihlásit“ – přihlášení probíhá až na subdoméně aplikace.
 
 ## Projekty
@@ -99,6 +100,23 @@ Fáze 1 – veřejný portál bez dat:
 - [x] 8. Cache hlavičky, přístupnost, validace, test šířek (audit 2026-09-18)
 - [x] 9. Nasazení na WEDOS + Cloudflare – v1 nasazená 2026-09-18, viz `docs/nasazeni.md`
 
+## v1.1 – obsah
+
+- [x] Aktualizovaná sekce „Teď“ na úvodní stránce, bez pracovního komentáře
+- [x] Položka „Poznámky“ v navigaci, navigace na úzkém displeji ve dvou řádcích
+- [x] `/poznamky/` – řádkový seznam (datum, název, popis) seskupený podle roku, od nejnovější
+- [x] `/poznamky/<slug>/` – poznámka jako technický list (popisky sekcí vlevo, text vpravo)
+- [x] Metadata poznámek jen v `content/notes.json` (`src/notes.php`)
+- [x] Tři první poznámky: mh42.cz v1, Proč tenhle web nemá framework, Schéma ve dne, PCB v noci
+- [x] Úvodní stránka: sekce Poznámky (3 nejnovější) s odkazem „všechny poznámky“
+- [x] Atom feed `/feed.atom` (RFC 4287, souhrny) + autodiscovery v `<head>` a odkaz na stránce Poznámky
+- [x] `sitemap.xml` s poznámkami a `lastmod`, generovaná ze stejných dat
+- [x] `/manifest.webmanifest` s `"id": "/"`, ikonami 192 a 512 px (`any`) a samostatnou
+  `icon-512-maskable.png` (grafika do 26 % poloměru, bezpečná zóna 40 %), bez service workeru.
+  Barvy manifestu jsou statické výchozí; lištu prohlížeče řídí dynamické `<meta name="theme-color">`.
+- [x] Poznámky: vlastní title, description, canonical, `og:type=article`, `og:url`
+- [x] Kontroly nasazení a balíčku rozšířené o poznámky, feed a manifest
+
 Fáze 2 – data: komponenta Stav, `api/ingest.php`, publisher.
 Fáze 3 – domácí server: Tunnel, Access, VPN, přesun portálu.
 
@@ -118,6 +136,6 @@ v prototypu jako jemnější záloha, varianta C se dál nerozvíjí.
 Varianta B je na webu (`public/assets/css/background.css`, dlaždice
 `public/assets/img/pozadi/`). Kolem vodorovných dělicích linek je ochranné pásmo
 (±0,75rem s měkkým přechodem), do kterého motiv nezasahuje: u linek sekcí, hlavičky
-a patičky přes celou šířku okna, u oddělovačů projektů 8rem za jejich konce.
+a patičky přes celou šířku okna, u oddělovačů projektů a poznámek 8rem za jejich konce.
 Pásma jsou kreslená jako `border-image`, takže jejich přesah do stran nerozšiřuje
 stránku. Při zvýšeném kontrastu, vynucených barvách a tisku se motiv ani pásma nezobrazují.

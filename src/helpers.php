@@ -61,6 +61,7 @@ function template(string $name, array $vars = []): void
  *   description  popis pro vyhledávače
  *   noindex      true = stránka se nemá indexovat
  *   styles       další CSS soubory z public/assets
+ *   type         Open Graph typ: 'website' nebo 'article' (poznámky)
  */
 function page_start(array $page): void
 {
@@ -71,6 +72,7 @@ function page_start(array $page): void
         'description' => '',
         'noindex'     => false,
         'styles'      => [],
+        'type'        => 'website',
     ];
 
     template('page-start', ['page' => $page]);

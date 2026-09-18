@@ -36,11 +36,14 @@ ErrorDocument 403 /404.php
 
 <IfModule mod_mime.c>
   AddType font/woff2 .woff2
+  AddType application/atom+xml .atom
+  AddType application/manifest+json .webmanifest
+  AddCharset utf-8 .atom .webmanifest
 </IfModule>
 
 <IfModule mod_headers.c>
   # Statické soubory: stejná ochrana proti „čichání“ typu jako u stránek z PHP.
-  <FilesMatch "\.(css|js|woff2|svg|png|ico|txt|xml)$">
+  <FilesMatch "\.(css|js|woff2|svg|png|ico|txt|xml|atom|webmanifest)$">
     Header set X-Content-Type-Options "nosniff"
   </FilesMatch>
 
@@ -50,8 +53,13 @@ ErrorDocument 403 /404.php
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 
-  # Obrázky a ikony: týden. favicon.ico a og-image.png mají pevnou adresu bez verze.
+  # Obrázky a ikony: týden. favicon.ico, og-image.png a ikony manifestu mají pevnou adresu bez verze.
   <FilesMatch "\.(svg|png|ico)$">
     Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+
+  # Atom feed a manifest: hodina – nové poznámky se ve čtečkách objeví brzy.
+  <FilesMatch "\.(atom|webmanifest)$">
+    Header set Cache-Control "public, max-age=3600"
   </FilesMatch>
 </IfModule>

@@ -24,12 +24,14 @@ body::before {
    aby se jeho čáry nepletly s linkami layoutu. */
 .site-header,
 .site-footer,
-.project + .project { position: relative; }
+.project + .project,
+.note-row + .note-row { position: relative; }
 
 .site-header::after,
 .site-footer::after,
 .section::after,
-.project + .project::after {
+.project + .project::after,
+.note-row + .note-row::after {
   content: "";
   position: absolute;
   left: 0;
@@ -50,11 +52,13 @@ body::before {
 
 /* Oddělovače řádků projektů jsou kratší – pásmo stačí o kus přesáhnout jejich konce,
    aby na ně nenavazovala cesta nebo vodič motivu. */
-.project + .project::after { --band-reach: 8rem; }
+.project + .project::after,
+.note-row + .note-row::after { --band-reach: 8rem; }
 
 .site-footer::after,
 .section::after,
-.project + .project::after { top: -0.75rem; }
+.project + .project::after,
+.note-row + .note-row::after { top: -0.75rem; }
 
 /* Kde má přednost čitelnost nebo úspora, motiv se nezobrazuje. */
 @media (prefers-contrast: more), (forced-colors: active), print {
@@ -62,5 +66,6 @@ body::before {
   .site-header::after,
   .site-footer::after,
   .section::after,
-  .project + .project::after { display: none; }
+  .project + .project::after,
+  .note-row + .note-row::after { display: none; }
 }
