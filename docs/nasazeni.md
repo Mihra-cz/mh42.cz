@@ -1,8 +1,46 @@
 # Nasazení mh42.cz na WEDOS
 
-Stav k 2026-09-18: **v1.1 nasazená** (delta nad v1, varianta A2).
+Stav k 2026-09-18: **v1.2 nasazená** (počasí, delta nad v1.1, varianta A2).
 Nasazení provádí autor ručně přes FTP a administraci WEDOS / Cloudflare;
 kontroly po nahrání spouští Claude přes HTTPS (`tools/overeni-nasazeni.py`).
+
+## Stav produkce v1.2
+
+| | |
+|---|---|
+| Nasazeno | 2026-09-18 |
+| Produkční commit | `0b76e5ac4a4a6f26434a1aedd716c2d5e91dd5eb` (mh42.cz v1.2 – počasí přes Open-Meteo), tag `v1.2.0` |
+| Způsob | delta deployment varianty A2 – 9 nových + 7 změněných souborů proti v1.1, nic se nemazalo |
+| `config/asset-versions.php` | součástí nasazení (nové otisky `components.css` a `weather.js`); `config/app.php` nahraný jako poslední |
+| Cloudflare | beze změny, purge nebyl potřeba |
+| Balíček v1.2 | `dist/mh42-2026-09-18-2120/` – pořadí nahrávání a rollback v `NASAZENI-v1.2.md` |
+| Rollback základ | balíček v1.1 `dist/mh42-2026-09-18-1856/` – zůstává beze změny |
+| Open-Meteo | Forecast i Geocoding API z WEDOS funkční, HTTP klient **curl** |
+| `<FTP_ROOT>/var/` | oprávnění **755**, cache počasí zapisuje PHP |
+
+**Kontrola HTTP:** `tools/overeni-nasazeni.py` → **109 ok, 0 chyb.** Navíc 14 neplatných vstupů
+na `/api/pocasi/` a `/api/mista/` odmítnuto (400 / 413 / 415 / 403, vždy `no-store`, bez dotazu na Open-Meteo).
+
+**Kontrola v headless Chromiu:** **18 ok, 0 chyb** – světlý i tmavý motiv, 1280 / 375 / 320 px
+bez vodorovného posouvání, konzole bez chyb a porušení CSP.
+
+**Ověřeno na produkci**
+- Výchozí Třebíč vykreslený serverem se skutečnými daty z Open-Meteo a atribucí „Data: Open-Meteo“.
+- Změna místa: hledání „Brno“ vrátilo kandidáty, výběr zobrazil počasí Brna, „zpět na Třebíč“ obnovil výchozí místo.
+- Cache na serveru: opakovaná načtení Třebíče i Brna mají stejný čas dat – bez nového dotazu na Open-Meteo.
+  Ve `var/weather/` jsou soubory Třebíče a Brna bez `latitude` a `longitude` (ověřil autor přes FTP).
+- `budget.json` vznikl až při hledání jiného místa a obsahuje jen `minute`, `m`, `day`, `d` –
+  žádné IP adresy, místa, souřadnice ani dotazy (ověřil autor přes FTP).
+- Žádné cookies, žádné externí požadavky prohlížeče – komunikuje jen s mh42.cz;
+  poloha zařízení se nikdy nevyžádala automaticky; v HTML nejsou souřadnice.
+- `Permissions-Policy: camera=(), microphone=(), geolocation=(self), payment=(), usb=()`.
+- Stránka O mně obsahuje větu o počasí z Open-Meteo.
+- Statické soubory: `components.css` a `weather.js` s otiskem obsahu v adrese, rok + `immutable`.
+
+**Známá zvláštnost WEDOS:** dynamické odpovědi se stavem 200 dostávají druhou hlavičku
+`Cache-Control` – HTML `max-age=300`, JSON z API `max-age=600` (a `Expires`). Naše `no-cache`
+/ `no-store` zůstává zachované a má přednost; není to blocker. Případné odstranění je odložený
+polish (viz „Známé chování WEDOS: druhá hlavička Cache-Control“).
 
 ## Stav produkce v1.1
 
@@ -39,11 +77,11 @@ navigace a Poznámky v pořádku; žádný horizontální overflow, žádné chy
 **Cache:** HTML `no-cache`; CSS/JS/písma rok + `immutable`; obrázky týden; verze
 v adresách (`?v=`) sedí s otiskem obsahu.
 
-## v1.2 – počasí (připraveno, zatím nenasazeno)
+## Nasazení v1.2 – příprava a postup
 
 Počasí z Open-Meteo na úvodní stránce, změna místa (hledání, poloha zařízení), endpointy
 `/api/pocasi/` a `/api/mista/` a věta o počasí na stránce O mně. Jak funguje, je v `README.md`
-(sekce Počasí), rozhodnutí v `docs/navrh.md`. Na produkci je dál v1.1.
+(sekce Počasí), rozhodnutí v `docs/navrh.md`. Nasazeno 2026-09-18 – stav v sekci „Stav produkce v1.2“.
 
 **Balíček:** `dist/mh42-2026-09-18-2120/A-oddeleny-koren/`, pořadí nahrávání a rollback
 v `NASAZENI-v1.2.md` tamtéž. Delta proti v1.1 (`dist/mh42-2026-09-18-1856/`) podle SHA-256:
@@ -98,19 +136,21 @@ skutečná chyba, teprve potom se rozhodne o dalším postupu.
 | Úklid po testu | diagnostika po sobě nezanechala žádnou cache počasí (testovací soubor i podsložku smazala) |
 | Veřejná diagnostická složka | po testu odstraněna z `www/` (adresa vrací 404 webu) |
 
-`<FTP_ROOT>/var/` na hostingu zůstává pro produkční cache počasí. Produkční předpoklady v1.2
-jsou splněné, jakmile autor potvrdí oprávnění `var/` **755** (úspěch zápisu při 755
-zároveň potvrzuje, že PHP běží pod účtem webhostingu).
+`<FTP_ROOT>/var/` na hostingu zůstává pro produkční cache počasí. Autor potvrdil oprávnění
+`var/` **755** – předpoklady v1.2 byly splněné (úspěch zápisu při 755 zároveň potvrzuje,
+že PHP běží pod účtem webhostingu).
 
 ### Známé chování WEDOS: druhá hlavička Cache-Control
 
-WEDOS k dynamickým odpovědím PHP (stav 200) přidává vlastní `Cache-Control: max-age=300`
-a `Expires` přibližně +5 minut. Aplikace současně posílá vlastní hlavičku – HTML
-`no-cache`, JSON z API `no-store` – takže odpověď má dvě hlavičky Cache-Control:
+WEDOS k dynamickým odpovědím PHP se stavem 200 přidává vlastní `Cache-Control` s `max-age`
+a odpovídající `Expires` – u HTML `max-age=300` (+5 minut), u JSON z API `max-age=600`
+(+10 minut, zjištěno po nasazení v1.2). Chybové odpovědi (4xx) ji nedostávají. Aplikace
+současně posílá vlastní hlavičku – HTML `no-cache`, JSON z API `no-store` – takže odpověď
+má dvě hlavičky Cache-Control:
 
 ```
-Cache-Control: no-cache
-Cache-Control: max-age=300
+Cache-Control: no-cache                Cache-Control: no-store
+Cache-Control: max-age=300             Cache-Control: max-age=600
 ```
 
 Není to blocker v1.2: `no-cache` dál vyžaduje revalidaci, Cloudflare HTML necachuje
@@ -153,11 +193,13 @@ bezpečném testu na WEDOS – kvůli kosmetice se `.htaccess` před vydáním n
 
 ### Rollback v1.2 → v1.1
 
-- Rychlý: nahrát `config/app.php` z balíčku v1.1 (nebo v něm nastavit `'enabled' => false`)
+- Rychlý: nahrát `rollback/config-app-pocasi-vypnuto.php` z balíčku v1.2 jako `config/app.php`
+  (v1.2 nastavení s `'enabled' => false`; stejně funguje `config/app.php` z balíčku v1.1)
   – sekce zmizí, endpointy vrací 404, nic dalšího se nemění.
 - Úplný: nahrát 7 změněných souborů z `dist/mh42-2026-09-18-1856/A-oddeleny-koren/`
-  (`config/asset-versions.php` jako první) a smazat 9 nových souborů a složku `var/`.
-  Podrobně v `NASAZENI-v1.2.md`.
+  (`config/app.php` jako první, `src/templates/page-start.php` před `src/helpers.php`,
+  `config/asset-versions.php` na konec), smazat 8 nových souborů mimo `var/` a z `var/`
+  jen `var/weather/` – složka `var/` (755) zůstane. Podrobně v `NASAZENI-v1.2.md`.
 
 ## Finální stav produkce v1
 

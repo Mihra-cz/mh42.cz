@@ -162,8 +162,8 @@ První skutečně dynamická veřejná data. Rozhodnutí autora:
 - [x] `Permissions-Policy: geolocation=(self)`, ostatní omezení beze změny
 - [x] O mně, „Jak tenhle web běží“: věta o počasí z Open-Meteo a o tom, že prohlížeč komunikuje jen s mh42.cz
 - [x] Testy bez Open-Meteo (`tools/test-pocasi.php`, `tools/test-pocasi-web.py`), kontrola balíčku a nasazení
-- [ ] Jednorázová diagnostika WEDOS (odchozí HTTPS na Open-Meteo, zápis ve `var/`), viz `docs/nasazeni.md`
-- [ ] Nasazení na WEDOS (A2 delta + `var/`), viz `docs/nasazeni.md`
+- [x] Jednorázová diagnostika WEDOS (odchozí HTTPS na Open-Meteo, zápis ve `var/`), viz `docs/nasazeni.md`
+- [x] Nasazení na WEDOS (A2 delta + `var/`) – v1.2 nasazená 2026-09-18, viz `docs/nasazeni.md`
 
 Fáze 2 – data: komponenta Stav, `api/ingest.php`, publisher.
 Fáze 3 – domácí server: Tunnel, Access, VPN, přesun portálu.
