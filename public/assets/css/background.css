@@ -60,6 +60,20 @@ body::before {
 .project + .project::after,
 .note-row + .note-row::after { top: -0.75rem; }
 
+/* Tabulka předpovědi počasí: vodorovná čára motivu procházející jejími řádky vypadá
+   jako podtržení nebo linka tabulky. Pásmo ji proto drží mimo celou tabulku; stejná
+   technika jako u dělicích linek, jen přes celou výšku tabulky místo pevných 1,5rem. */
+.weather__days { position: relative; }
+
+.weather__days::after {
+  content: "";
+  position: absolute;
+  inset: -0.5rem 0;
+  z-index: -1;
+  pointer-events: none;
+  border-image: linear-gradient(transparent, var(--bg) 8%, var(--bg) 92%, transparent) 0 fill / 0 / 0 1rem;
+}
+
 /* Kde má přednost čitelnost nebo úspora, motiv se nezobrazuje. */
 @media (prefers-contrast: more), (forced-colors: active), print {
   body::before,
@@ -67,5 +81,6 @@ body::before {
   .site-footer::after,
   .section::after,
   .project + .project::after,
-  .note-row + .note-row::after { display: none; }
+  .note-row + .note-row::after,
+  .weather__days::after { display: none; }
 }

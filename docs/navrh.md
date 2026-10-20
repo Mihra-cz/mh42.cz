@@ -168,6 +168,39 @@ První skutečně dynamická veřejná data. Rozhodnutí autora:
 Fáze 2 – data: komponenta Stav, `api/ingest.php`, publisher.
 Fáze 3 – domácí server: Tunnel, Access, VPN, přesun portálu.
 
+## v1.3 – podzimní aktualizace obsahu
+
+Obsahová verze bez nové technické funkce: web má odpovídat skutečnému stavu projektů
+k 2026-10-20. Počasí (Open-Meteo, cache, strop dotazů, geolokace, endpointy) se nemění.
+
+- [x] Sekce „Teď“ aktualizovaná k 2026-10-20: Nexus provozně připravený, AnimeDB a příprava
+  jejího nasazení, NexusSTAT ve vývoji (na Nexusu zatím neběží), domácí automatizace stále ve fázi návrhu
+- [x] „Čemu se věnuji“: HomeLab už nezní jako pouhý plán – server existuje a je provozně
+  připravený, služby na něj přecházejí postupně, správa a interní služby zůstávají neveřejné
+- [x] HomeLab v `content/projects.json`: `building` → `live` („v provozu“ odpovídá skutečnosti),
+  summary popisuje Nexus – Linux na ARM64, oddělování aplikací do kontejnerů a připravenou
+  strukturu projektů, dat a dokumentace i pravidla pro zálohu a obnovu;
+  technologie Linux · Docker · ARM64
+- [x] Texty rozlišují **provozované / připravené / plánované**: server běží, struktura a pravidla
+  jsou připravená, kontejnerizace služeb a ověřená obnova zatím ne. Nikde se netvrdí, že Nexus
+  má hotové a vyzkoušené zálohování ani že všechny aplikace už běží v kontejnerech
+- [x] AnimeDB: stav zůstává `development`, summary doplněno o přípravu bezpečného nasazení
+  na Nexus a o to, že produkčně tam ještě neběží; technologie beze změny
+- [x] Nový projekt NexusSTAT (skupina Domácnost a infrastruktura, `development`, přístup `local`):
+  diagnostika stavu Nexusu a vybraných služeb. Podle veřejného repozitáře je rozpracovaný –
+  systémový a síťový kolektor, pravidelné měření, základ historie v SQLite, simulátor OLED
+  a automatizované testy – ale na Nexusu nasazený není; vývoj se nezaměňuje s nasazením
+  a lokální webové rozhraní se neoznačuje za hotové
+- [x] MangaDB a Domácí automatizace zůstávají `planned` – stav se nemění kvůli dojmu aktivity
+- [x] Nová poznámka „Nexus: domácí server dostává pevnou strukturu“ (2026-10-20), ze stejných
+  dat se přegenerovaly `sitemap.xml` a `feed.atom` (`tools/seo-soubory.php`)
+- [x] O mně: rozlišeno, že Nexus běží, jednotlivé služby se teprve připravují a AnimeDB
+  na něm produkčně neběží
+- [x] Pozadí: ochranné pásmo i kolem tabulky předpovědi počasí – nález na 320 px ve světlém
+  motivu, kdy čára motivu procházela jejími řádky
+- [x] Veřejné texty bez interních IP adres, cest, mountů, názvů share, kapacit a identifikátorů
+- [ ] Nasazení v1.3 – **zatím neproběhlo**, `docs/nasazeni.md` proto zůstává na stavu v1.2
+
 ## Odložený vizuální polish: pozadí
 
 Až bude základ webu hotový, přibude velmi decentní motiv pozadí inspirovaný elektronikou:
@@ -187,3 +220,8 @@ Varianta B je na webu (`public/assets/css/background.css`, dlaždice
 a patičky přes celou šířku okna, u oddělovačů projektů a poznámek 8rem za jejich konce.
 Pásma jsou kreslená jako `border-image`, takže jejich přesah do stran nerozšiřuje
 stránku. Při zvýšeném kontrastu, vynucených barvách a tisku se motiv ani pásma nezobrazují.
+
+Od v1.3 má vlastní pásmo i tabulka předpovědi počasí: tam čára motivu nevedla přes dělicí
+linku, ale přes řádky tabulky, kde vypadala jako podtržení nebo linka tabulky. Pásmo kopíruje
+celou výšku tabulky (±0,5rem) a přesahuje 1rem za její okraje – stejná technika, jen místo
+pevných 1,5rem kolem linky.

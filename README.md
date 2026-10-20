@@ -67,8 +67,11 @@ jako Apache na produkci (tam ji zajišťuje `public/.htaccess`).
 Test na Apachi v produkčním režimu (ověří `.htaccess`, stavy 404, cache a hlavičky):
 
 ```bash
-docker run --rm -p 8080:80 -v "$PWD":/var/www -v "$PWD/public":/var/www/html php:8.3-apache sh -c "a2enmod headers && apache2-foreground"
+docker run --rm -p 8080:80 -v "$PWD":/var/www -v "$PWD/public":/var/www/html php:8.3-apache sh -c "a2enmod headers rewrite && apache2-foreground"
 ```
+
+`rewrite` je potřeba kvůli pravidlům na začátku `public/.htaccess` (WEDOS `domains/`
+a `subdom/`), která nejsou v `<IfModule>` – bez tohoto modulu vrací Apache HTTP 500.
 
 ## Generované soubory
 
@@ -255,3 +258,35 @@ vrací 404. Bez placeholderu a bez vymyšlených hodnot.
 
 Běžný vývojový server (`php -S …`) volá skutečné Open-Meteo – nejvýš jednou za 15 minut
 pro jedno místo – a cache ukládá do `var/weather/` v repozitáři (git ji ignoruje).
+
+## v1.3 – podzimní aktualizace obsahu
+
+Obsahová verze bez nové technické funkce: web má odpovídat skutečnému stavu projektů
+k 2026-10-20. Do počasí (Open-Meteo, cache, strop dotazů, geolokace, endpointy) nezasahuje.
+Rozhodnutí a kontrolní seznam jsou v [docs/navrh.md](docs/navrh.md).
+
+- **Sekce „Teď“** na úvodní stránce aktualizovaná k 2026-10-20: Nexus je provozně připravený,
+  AnimeDB se dál vyvíjí a připravuje se její nasazení, NexusSTAT je ve vývoji, domácí automatizace
+  zůstává ve fázi návrhu. Stejným směrem je upravené i „Čemu se věnuji“.
+- **HomeLab / Nexus** (`content/projects.json`): stav `building` → `live`, summary popisuje
+  domácí server Nexus – Linux na ARM64, oddělování aplikací do kontejnerů a připravenou
+  strukturu projektů, dat a dokumentace včetně pravidel pro zálohu a obnovu.
+  Technologie `Linux · Docker · ARM64`. Veřejný je jen popis; správa a služby zůstávají neveřejné.
+- **Co je provozované, co připravené a co plánované** se v textech drží odděleně: server běží,
+  struktura a pravidla jsou připravená, kontejnerizace služeb a ověřené zálohování teprve
+  přijdou s prvními aplikacemi. Netvrdit hotovo tam, kde zatím existuje jen pravidlo.
+- **AnimeDB**: stav dál `development`, summary doplněné o přípravu bezpečného nasazení na Nexus
+  s tím, že produkčně tam ještě neběží.
+- **NexusSTAT**: nový projekt ve skupině Domácnost a infrastruktura (`development`, přístup
+  `local`) – diagnostika stavu Nexusu a vybraných služeb. Rozpracovaný: kolektor, pravidelné
+  měření, základ historie v SQLite, simulátor OLED a testy; na Nexusu zatím nenasazený.
+  MangaDB a Domácí automatizace zůstávají `planned`.
+- **Nová poznámka** „Nexus: domácí server dostává pevnou strukturu“ (`nexus-domaci-server`,
+  2026-10-20). Ze stejných dat se přegenerovaly `sitemap.xml` a `feed.atom`.
+- **O mně**: rozlišeno, že Nexus běží, jednotlivé služby se teprve připravují a AnimeDB
+  na něm produkčně nasazená není.
+- **Pozadí**: ochranné pásmo i kolem tabulky předpovědi počasí (`background.css`) – na 320 px
+  ve světlém motivu jí procházela čára motivu a vypadala jako podtržení řádku.
+
+Veřejné texty neobsahují interní IP adresy, cesty, mounty, názvy share, kapacity disků
+ani jiné provozní údaje – na webu je jen to, co má veřejnou informační hodnotu.

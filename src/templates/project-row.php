@@ -3,11 +3,13 @@
 
 $tech = $project['tech'] ?? [];
 $link = $project['link'] ?? null;
+// Odkaz mimo web se značí stejně jako jinde na webu: třída ext (šipka ↗, v tisku adresa).
+$linkClass = $link !== null && preg_match('~^https?://~i', $link['href']) === 1 ? 'ext' : 'more';
 ?>
       <li class="project" id="<?= e($project['slug']) ?>">
         <h3 class="project__name"><?= e($project['name']) ?></h3>
         <div class="project__body">
-          <p><?= e_cs($project['summary']) ?><?php if ($link): ?> <a class="more" href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a><?php endif; ?></p>
+          <p><?= e_cs($project['summary']) ?><?php if ($link): ?> <a class="<?= $linkClass ?>" href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a><?php endif; ?></p>
           <dl class="project__meta">
             <div><dt>stav</dt><dd><?= e(project_status_label($project['status'])) ?></dd></div>
 <?php if (isset($project['access'])): ?>

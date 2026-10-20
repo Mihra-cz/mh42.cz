@@ -26,7 +26,7 @@ $github = config('github_url');
   </div>
   <div class="section__body prose">
     <p>Když pro něco nenajdu řešení, které mi vyhovuje, často je zajímavější postavit si vlastní. Takhle vzniká například AnimeDB pro správu domácí anime knihovny a&nbsp;časem by na něj měla navázat MangaDB.</p>
-    <p>Doma postupně vzniká i&nbsp;vlastní serverové prostředí, kam chci přesouvat další služby a&nbsp;propojovat je se senzory, automatizací a&nbsp;dalšími projekty. <a class="more" href="/projekty/">projekty</a></p>
+    <p>Doma kvůli tomu stojí vlastní server Nexus. Je provozně připravený a&nbsp;běží, jednotlivé služby na něj ale přecházejí postupně – AnimeDB se na něj teprve připravuje a&nbsp;produkčně tam ještě neběží. Časem se k&nbsp;němu přidají senzory, automatizace a&nbsp;další projekty. <a class="more" href="/projekty/">projekty</a></p>
   </div>
 </section>
 
@@ -48,7 +48,7 @@ $github = config('github_url');
     <p>Stránky jsou obyčejné HTML a&nbsp;CSS, které skládá několik jednoduchých PHP šablon – bez frameworku, databáze a&nbsp;sestavovacích nástrojů. První verze běží na klasickém PHP hostingu.</p>
     <p>Písmo IBM Plex Sans a&nbsp;IBM Plex Mono je uložené přímo na webu, takže se nic nenačítá z&nbsp;cizích serverů. Počasí na úvodní stránce načítá server z&nbsp;Open-Meteo a&nbsp;drží ho 15&nbsp;minut v&nbsp;cache; prohlížeč komunikuje jen s&nbsp;mh42.cz. Web aktuálně nepoužívá analytické služby třetích stran ani cookies.</p>
     <p>Světlý nebo tmavý motiv se řídí nastavením systému. Přepínačem v&nbsp;hlavičce ho jde změnit a&nbsp;volba zůstane uložená jen ve vašem prohlížeči.</p>
-    <p>Dlouhodobě se web přestěhuje na domácí server. Ten nemá veřejnou IP adresu, proto budou vybrané služby dostupné přes Cloudflare Tunnel: spojení navazuje domácí server směrem ven a&nbsp;doma není potřeba otevírat žádné porty.</p>
+    <p>Dlouhodobě se web přestěhuje na domácí server Nexus. Ten už běží, ale nemá veřejnou IP adresu, proto budou vybrané služby dostupné přes Cloudflare Tunnel: spojení navazuje domácí server směrem ven a&nbsp;doma není potřeba otevírat žádné porty.</p>
   </div>
 </section>
 <?php if ($github): ?>

@@ -1,6 +1,13 @@
 {
   "notes": [
     {
+      "slug": "nexus-domaci-server",
+      "title": "Nexus: domácí server dostává pevnou strukturu",
+      "published": "2026-10-20",
+      "updated": "2026-10-20",
+      "summary": "Z původního Raspberry Pi 5 se stává domácí server Nexus – proč kontejnery, jaká struktura za tím stojí a co se na něj připravuje jako první."
+    },
+    {
       "slug": "mh42-cz-v1",
       "title": "mh42.cz v1: od provizorní stránky k osobnímu portálu",
       "published": "2026-09-18",

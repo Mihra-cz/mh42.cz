@@ -18,7 +18,7 @@
       "slug": "animedb",
       "name": "AnimeDB",
       "group": "aplikace",
-      "summary": "Vlastní webová aplikace pro správu domácí anime knihovny. Eviduje tituly, sezóny a další části, metadata i samotné video soubory – jejich technické vlastnosti, duplicity a kontrolu médií.",
+      "summary": "Vlastní webová aplikace pro správu domácí anime knihovny. Eviduje tituly, sezóny a další části, metadata i samotné video soubory – jejich technické vlastnosti, duplicity a kontrolu médií. Vyvíjí se dál a teď se připravuje její bezpečné nasazení na domácí server Nexus; produkčně tam ještě neběží.",
       "status": "development",
       "access": "private",
       "tech": [
@@ -40,8 +40,25 @@
       "slug": "homelab",
       "name": "HomeLab",
       "group": "domacnost",
-      "summary": "Domácí serverová infrastruktura pro provoz vlastních služeb – síť, kontejnery a vzdálený přístup. Postupně sem stěhuji aplikace, které dnes běží jinde nebo teprve vznikají. Veřejný je jen tento popis – správa i služby HomeLabu jsou dostupné jen lokálně nebo jinou neveřejnou cestou.",
-      "status": "building"
+      "summary": "Nexus – domácí server pro provoz vlastních služeb. Běží na Linuxu na ARM64; aplikace se na něm mají oddělovat do kontejnerů a je pro ně připravená jasná struktura projektů, dat a dokumentace i pravidla pro zálohu a obnovu. Postupně sem přecházejí aplikace, které dnes běží jinde nebo teprve vznikají. Veřejný je jen tento popis – správa i samotné služby jsou neveřejné.",
+      "status": "live",
+      "tech": [
+        "Linux",
+        "Docker",
+        "ARM64"
+      ]
+    },
+    {
+      "slug": "nexusstat",
+      "name": "NexusSTAT",
+      "group": "domacnost",
+      "summary": "Pomocný projekt k Nexusu: sledovat stav domácího serveru a vybraných služeb. Implementovaný je systémový a síťový kolektor, pravidelné měření, základ historie v SQLite, simulátor OLED displeje a automatizované testy. Na Nexusu zatím nasazený není a podoba výstupu – displej i lokální přehled – se teprve usazuje. Veřejný je zdrojový kód; samotná diagnostika poběží jen doma.",
+      "status": "development",
+      "access": "local",
+      "link": {
+        "href": "https://github.com/Mihra-cz/NexusSTAT",
+        "label": "Zdrojový kód"
+      }
     },
     {
       "slug": "domaci-automatizace",

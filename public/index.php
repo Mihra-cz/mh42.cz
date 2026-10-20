@@ -38,7 +38,7 @@ $latestNotes = array_slice(load_notes(), 0, 3);
     <dl class="topics">
       <div class="topic">
         <dt>Domácí server a&nbsp;HomeLab</dt>
-        <dd>Server doma, bez veřejné IP adresy. Postupně na něj chci přestěhovat většinu služeb z&nbsp;běžného hostingu a&nbsp;vybrané z&nbsp;nich zpřístupnit přes Cloudflare Tunnel. <a class="more" href="/projekty/#homelab">projekt</a></dd>
+        <dd>Domácí server Nexus, bez veřejné IP adresy. Je provozně připravený a&nbsp;postupně na něj přecházejí vlastní služby; vybrané z&nbsp;nich zpřístupním přes Cloudflare Tunnel. Správa a&nbsp;interní služby zůstávají neveřejné. <a class="more" href="/projekty/#homelab">projekt</a></dd>
       </div>
       <div class="topic">
         <dt>Domácí automatizace</dt>
@@ -46,7 +46,7 @@ $latestNotes = array_slice(load_notes(), 0, 3);
       </div>
       <div class="topic">
         <dt>Anime a&nbsp;manga</dt>
-        <dd>Vlastní evidence domácí knihovny. AnimeDB je ve vývoji, MangaDB na ni časem naváže. Aplikace nejsou veřejné, na webu je jen jejich popis. <a class="more" href="/projekty/#animedb">projekty</a></dd>
+        <dd>Vlastní evidence domácí knihovny. AnimeDB je ve vývoji a&nbsp;připravuje se její nasazení na Nexus, MangaDB na ni časem naváže. Aplikace nejsou veřejné, na webu je jen jejich popis. <a class="more" href="/projekty/#animedb">projekty</a></dd>
       </div>
     </dl>
   </div>
@@ -55,13 +55,13 @@ $latestNotes = array_slice(load_notes(), 0, 3);
 <section class="section">
   <div class="section__head">
     <h2 id="ted" class="section__title">Teď</h2>
-    <p class="section__meta">aktualizováno <time datetime="2026-09-18">2026-09-18</time></p>
+    <p class="section__meta">aktualizováno <time datetime="2026-10-20">2026-10-20</time></p>
   </div>
   <div class="section__body">
     <ul class="now">
-      <li>Rozšiřuji tenhle web o&nbsp;obsah a&nbsp;technické poznámky.<span class="now__note">První verze už běží veřejně na WEDOS za Cloudflare.</span></li>
-      <li>Dál vyvíjím AnimeDB.</li>
-      <li>Postupně připravuji domácí server na pozdější přesun služeb z&nbsp;hostingu.</li>
+      <li>Domácí server Nexus je provozně připravený.<span class="now__note">Vlastní služby na něj přecházejí postupně, po jedné.</span></li>
+      <li>Dál vyvíjím AnimeDB a&nbsp;připravuji její nasazení na Nexus.</li>
+      <li>NexusSTAT pro diagnostiku a&nbsp;stav Nexusu je ve vývoji; na Nexusu zatím neběží.</li>
       <li>Domácí automatizace je zatím ve fázi návrhu.</li>
     </ul>
   </div>
