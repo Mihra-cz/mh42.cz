@@ -4,6 +4,28 @@ Stav k 2026-10-20: **v1.3 nasazená** (aktualizace obsahu, delta nad v1.2, varia
 Nasazení provádí autor ručně přes FTP a administraci WEDOS / Cloudflare;
 kontroly po nahrání spouští Claude přes HTTPS (`tools/overeni-nasazeni.py`).
 
+## Pravidlo: balíček je neměnný artefakt
+
+Produkční balíček v `dist/` se po sestavení už nemění. Integrační testy nad ním běží
+**nad jeho dočasnou kopií**, která se po testu odstraní; běhová data nesmí být součástí
+deploymentu. Ve `var/` patří jedině `.htaccess` – cache počasí, `budget.json`, značky chyb
+a dočasné soubory vznikají až na serveru.
+
+Proč na tom záleží: když se aplikace (typicky produkční Apache test) spustí přímo nad
+balíčkem, zapíše do něj běhová data. Ta by se při uploadu přepsala přes živý stav serveru
+a zároveň rozbíjejí porovnání balíčků podle SHA-256, ze kterého se odvozuje delta nasazení.
+
+```bash
+python3 tools/test-balicek.py --apache [SLOŽKA]   # Apache nad dočasnou kopií, s úklidem
+python3 tools/balicek.py --kontrola [SLOŽKA]      # čistota balíčku – před každým uploadem
+python3 tools/test-balicek.py                     # regresní test (bez sítě)
+```
+
+`tools/balicek.py` tuhle kontrolu dělá i sám na konci sestavení, nad oběma variantami
+i oběma ZIP archivy; při nálezu balíček označí za nepoužitelný. Nalezené soubory se
+**nikdy nemažou automaticky** – ani v pracovním projektu, ani ve starších balíčcích,
+které slouží jako základ rollbacku.
+
 ## Stav produkce v1.3
 
 | | |

@@ -64,7 +64,8 @@ Web pak běží na <http://localhost:8000>, styleguide na <http://localhost:8000
 Router `tools/dev-router.php` vrací pro neexistující adresy stránku 404 stejně
 jako Apache na produkci (tam ji zajišťuje `public/.htaccess`).
 
-Test na Apachi v produkčním režimu (ověří `.htaccess`, stavy 404, cache a hlavičky):
+Test na Apachi v produkčním režimu (ověří `.htaccess`, stavy 404, cache a hlavičky)
+nad **pracovním stromem**:
 
 ```bash
 docker run --rm -p 8080:80 -v "$PWD":/var/www -v "$PWD/public":/var/www/html php:8.3-apache sh -c "a2enmod headers rewrite && apache2-foreground"
@@ -72,6 +73,12 @@ docker run --rm -p 8080:80 -v "$PWD":/var/www -v "$PWD/public":/var/www/html php
 
 `rewrite` je potřeba kvůli pravidlům na začátku `public/.htaccess` (WEDOS `domains/`
 a `subdom/`), která nejsou v `<IfModule>` – bez tohoto modulu vrací Apache HTTP 500.
+
+Totéž nad **produkčním balíčkem** se nikdy nespouští přímo – balíček je neměnný artefakt:
+
+```bash
+python3 tools/test-balicek.py --apache
+```
 
 ## Generované soubory
 
@@ -93,10 +100,24 @@ Vygenerované soubory se ručně neupravují, mění se generátor.
 
 - `python3 tools/balicek.py` – zkontroluje vygenerované soubory a sestaví produkční
   balíček do `dist/` (varianty A a B, seznamy souborů, zipy, náhradní `.htaccess`).
+  Na závěr ověří, že balíček neobsahuje běhová data; jinak selže.
+- `python3 tools/balicek.py --kontrola [SLOŽKA]` – jen tahle kontrola nad existujícím
+  balíčkem (bez složky nejnovější v `dist/`). **Spustit před každým uploadem.**
+- `python3 tools/test-balicek.py` – regresní test čistoty balíčku a izolace testů (bez sítě).
+- `python3 tools/test-balicek.py --apache [SLOŽKA]` – produkční Apache + `overeni-nasazeni.py`
+  nad **dočasnou kopií** balíčku; kopii po sobě uklidí a ověří, že balíček zůstal beze změny.
 - `python3 tools/wedos-diagnostika.py pripravit|vyhodnotit` – diagnostika hostingu.
 - `python3 tools/overeni-nasazeni.py [adresa] [--lokalne]` – kontrola po nahrání.
   Cache-Control vyhodnocuje ze všech výskytů hlavičky (WEDOS přidává vlastní `max-age=300`).
 - `python3 tools/hlavicky.py` – testy tohoto vyhodnocení s fixtures (bez sítě).
+
+**Produkční balíčky jsou neměnné artefakty.** Integrační testy běží nad jejich dočasnou
+kopií a běhová data (cache počasí, `budget.json`, značky chyb, dočasné soubory) nesmí být
+součástí deploymentu – ve `var/` patří jen `.htaccess`. Když se aplikace spustí přímo nad
+balíčkem v `dist/`, zapíše do něj běhová data: na produkci by přepsala živý stav a zároveň
+rozbíjejí porovnání balíčků, ze kterého se odvozuje delta nasazení. Nástroje takové soubory
+hlásí, ale nikdy je samy nemažou – ani v pracovním projektu, ani ve starších balíčcích,
+které slouží jako základ rollbacku.
 
 Postup je v [docs/nasazeni.md](docs/nasazeni.md).
 

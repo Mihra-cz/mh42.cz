@@ -12,7 +12,16 @@ a spustí testy počasí (tools/test-pocasi.php – nastavení, cache, výpadky 
 stránka se zapnutým i vypnutým počasím; bez sítě). PHP kontroly běží v Dockeru.
 Otisky assetů zapíše do config/asset-versions.php (verze v adresách podle obsahu).
 
-Spuštění: python3 tools/balicek.py [--bez-lintu]
+Po sestavení ověří čistotu balíčku: produkční balíček je neměnný artefakt a nesmí
+obsahovat běhová data (cache počasí, budget.json, značky chyb, dočasné soubory).
+Kontrolují se obě varianty i oba ZIP archivy; při nálezu sestavení selže.
+Integrační testy proto nikdy neběží nad balíčkem v dist/, ale nad jeho dočasnou
+kopií – viz tools/test-balicek.py.
+
+Spuštění:
+  python3 tools/balicek.py [--bez-lintu]        # sestavit balíček
+  python3 tools/balicek.py --kontrola [SLOŽKA]  # jen čistota existujícího balíčku
+                                                # (bez SLOŽKY nejnovější v dist/)
 """
 import hashlib, json, os, re, shutil, struct, subprocess, sys, time, zipfile
 from pathlib import Path
@@ -36,6 +45,92 @@ DENY_HTACCESS = """# Interní soubory aplikace – z webu nedostupné.
 """
 
 errors = []
+
+# ---------- Čistota balíčku ----------
+# Balíček je neměnný artefakt pro ruční upload. Běhová data, která aplikace zapisuje za
+# provozu, do něj nepatří: na produkci by přepsala živý stav a zároveň rozbíjejí porovnání
+# balíčků, ze kterého se odvozuje delta nasazení. Ve var/ smí být jediný soubor.
+VAR_POVOLENO = {'var/.htaccess'}
+RUNTIME_JMENA = {'budget.json', '.DS_Store', 'Thumbs.db'}
+RUNTIME_PRIPONY = ('.fail', '.tmp', '.swp', '.log', '~')
+RUNTIME_SLOZKY = {'weather', '__pycache__', '.git'}
+
+
+def runtime_duvod(rel):
+    """Proč cesta v balíčku nemá co dělat – nebo None, když je v pořádku.
+
+    Porovnává se na celé části cesty, ne na podřetězce: src/weather.php
+    ani assets/js/weather.js nejsou běhová data.
+    """
+    parts = rel.split('/')
+    name = parts[-1]
+    if parts[0] == 'var' and rel not in VAR_POVOLENO:
+        return 'běhová data ve var/ (povolený je jen var/.htaccess)'
+    if RUNTIME_SLOZKY & set(parts[:-1]):
+        return 'běhová složka'
+    if name in RUNTIME_JMENA:
+        return 'běhový soubor'
+    if name.endswith(RUNTIME_PRIPONY) or name.startswith('.tmp-'):
+        return 'dočasný soubor'
+    return None
+
+
+def runtime_nalezy(cesty):
+    """[(cesta, důvod), …] pro cesty relativní ke kořeni varianty."""
+    return [(rel, duvod) for rel in sorted(cesty) if (duvod := runtime_duvod(rel)) is not None]
+
+
+def cesty_ve_slozce(root):
+    return [p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()]
+
+
+def nalezy_ve_slozce(root):
+    """Nálezy ve složce: běhové soubory podle cesty + symbolické odkazy.
+
+    Symlink v balíčku nedává smysl (balíček se sestavuje kopírováním) a rglob do něj
+    nezabíhá – byl by to slepý bod kontroly, kterým by runtime data mohla projít.
+    """
+    nalezy = runtime_nalezy(cesty_ve_slozce(root))
+    nalezy += [(p.relative_to(root).as_posix(), 'symbolický odkaz')
+               for p in sorted(root.rglob('*')) if p.is_symlink()]
+    return sorted(set(nalezy))
+
+
+def cesty_v_zipu(path):
+    with zipfile.ZipFile(path) as z:
+        return [n for n in z.namelist() if not n.endswith('/')]
+
+
+def varianty(balicek):
+    """Podsložky balíčku, které jsou deployment variantou (poznají se podle var/)."""
+    return sorted(d for d in balicek.iterdir() if d.is_dir() and (d / 'var').is_dir())
+
+
+def kontrola_cistoty(balicek):
+    """Obě varianty i oba ZIPy. Vrací počet nálezů; podrobnosti vypíše."""
+    print('\nKontrola čistoty balíčku (běhová data nepatří do deploymentu):')
+    nalezeno = 0
+    cile = [(d.name + '/', nalezy_ve_slozce(d), len(cesty_ve_slozce(d))) for d in varianty(balicek)]
+    cile += [(z.name, runtime_nalezy(cesty_v_zipu(z)), len(cesty_v_zipu(z)))
+             for z in sorted(balicek.glob('*.zip'))]
+    if not cile:
+        check(False, f'{balicek.name}: nenalezena žádná varianta ani ZIP ke kontrole')
+        return 1
+
+    for kde, nalezy, pocet in cile:
+        nalezeno += len(nalezy)
+        check(not nalezy, f'{kde} bez běhových dat ({pocet} souborů)'
+              + (f' – NALEZENO {len(nalezy)}' if nalezy else ''))
+        for rel, duvod in nalezy[:10]:
+            print(f'          {rel}  ← {duvod}')
+        if len(nalezy) > 10:
+            print(f'          … a dalších {len(nalezy) - 10}')
+    return nalezeno
+
+
+def nejnovejsi_balicek():
+    kandidati = sorted((d for d in DIST.glob('mh42-*') if d.is_dir()), key=lambda d: d.name)
+    return kandidati[-1] if kandidati else None
 
 
 def check(ok, message):
@@ -223,7 +318,29 @@ ErrorDocument 403 /404.php""")
     return out, counts
 
 
+RUNTIME_VYSVETLENI = """
+Balíček obsahuje běhová data a NESMÍ se nasadit.
+Vznikají, když se aplikace spustí přímo nad balíčkem v dist/ – typicky produkční
+Apache test. Balíček je neměnný artefakt: integrační testy patří nad jeho dočasnou
+kopii (python3 tools/test-balicek.py --apache), ne nad něj samotný.
+
+Co s tím: balíček sestav znovu (python3 tools/balicek.py) a test pusť nad kopií.
+Nalezené soubory tenhle nástroj záměrně nemaže – ani v pracovním projektu,
+ani ve starších balíčcích, které slouží jako základ rollbacku."""
+
+
 if __name__ == '__main__':
+    if '--kontrola' in sys.argv:
+        args = [a for a in sys.argv[1:] if not a.startswith('--')]
+        balicek = Path(args[0]) if args else nejnovejsi_balicek()
+        if balicek is None or not balicek.is_dir():
+            sys.exit(f'Balíček ke kontrole nenalezen: {args[0] if args else "dist/mh42-*"}')
+        print(f'Balíček: {balicek}')
+        if kontrola_cistoty(balicek):
+            sys.exit(RUNTIME_VYSVETLENI)
+        print('\nBalíček je čistý – připravený k nasazení.')
+        sys.exit(0)
+
     preflight(lint='--bez-lintu' not in sys.argv)
     if errors:
         sys.exit(f'\nBalíček nesestaven – {len(errors)} chyb.')
@@ -231,3 +348,7 @@ if __name__ == '__main__':
     print(f'\nBalíček: {out.relative_to(ROOT)}')
     for name, n in counts.items():
         print(f'  {name}: {n} souborů ({name}.zip, SOUBORY-{name}.txt)')
+
+    # Závěrečná kontrola: čerstvě sestavený balíček musí odcházet bez běhových dat.
+    if kontrola_cistoty(out):
+        sys.exit(RUNTIME_VYSVETLENI)
