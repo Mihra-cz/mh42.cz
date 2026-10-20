@@ -1,8 +1,101 @@
 # Nasazení mh42.cz na WEDOS
 
-Stav k 2026-09-18: **v1.2 nasazená** (počasí, delta nad v1.1, varianta A2).
+Stav k 2026-10-20: **v1.3 nasazená** (aktualizace obsahu, delta nad v1.2, varianta A2).
 Nasazení provádí autor ručně přes FTP a administraci WEDOS / Cloudflare;
 kontroly po nahrání spouští Claude přes HTTPS (`tools/overeni-nasazeni.py`).
+
+## Stav produkce v1.3
+
+| | |
+|---|---|
+| Nasazeno | 2026-10-20 |
+| Produkční commit | `2da4a87b0f6a84e39a50d99125861ca8a2a8aa07` (mh42.cz v1.3 – podzimní aktualizace obsahu), tag `v1.3.0` |
+| Způsob | delta deployment varianty A2 – 1 nový + 9 změněných souborů proti v1.2, **nic se nemazalo** |
+| `config/asset-versions.php` | součástí nasazení (nový otisk `background.css`), nahraný jako poslední |
+| `config/app.php` | **beze změny**, nenahrával se – nastavení počasí zůstalo nedotčené |
+| Cloudflare | beze změny, **purge nebyl potřeba ani proveden** |
+| Balíček v1.3 | `dist/mh42-2026-10-20-2221/` – pořadí nahrávání a rollback v `NASAZENI-v1.3.md` |
+| Rollback základ | balíček v1.2 `dist/mh42-2026-09-18-2120/` – zůstává beze změny |
+
+Obsahová verze bez nové technické funkce. Logika počasí, cache, strop dotazů ani endpointy
+se nezměnily; rozhodnutí a kontrolní seznam jsou v `docs/navrh.md`, sekce „v1.3“.
+
+**Nahrané soubory** (ověřeno porovnáním balíčků v1.2 → v1.3 podle SHA-256):
+
+| | Z balíčku `A-oddeleny-koren/…` | Cíl |
+|---|---|---|
+| nový | `public/poznamky/nexus-domaci-server/index.php` | `<FTP_ROOT>/www/poznamky/nexus-domaci-server/index.php` |
+| změna | `content/notes.json` | `<FTP_ROOT>/content/notes.json` |
+| změna | `content/projects.json` | `<FTP_ROOT>/content/projects.json` |
+| změna | `public/assets/css/background.css` | `<FTP_ROOT>/www/assets/css/background.css` |
+| změna | `src/templates/project-row.php` | `<FTP_ROOT>/src/templates/project-row.php` |
+| změna | `public/index.php` | `<FTP_ROOT>/www/index.php` |
+| změna | `public/o-mne/index.php` | `<FTP_ROOT>/www/o-mne/index.php` |
+| změna | `public/feed.atom` | `<FTP_ROOT>/www/feed.atom` |
+| změna | `public/sitemap.xml` | `<FTP_ROOT>/www/sitemap.xml` |
+| změna | `config/asset-versions.php` | `<FTP_ROOT>/config/asset-versions.php` |
+
+Pořadí vycházelo ze dvou pravidel: **soubor assetu vždy před mapou otisků** (jinak by se pod novou
+adresou s `immutable` uložil na rok starý soubor) a **stránka poznámky těsně před `content/notes.json`**
+(bez záznamu v něm stránka skončí výjimkou, zatímco opačné pořadí by každému návštěvníkovi ukázalo
+odkaz na 404).
+
+**Kontrola HTTP:** `tools/overeni-nasazeni.py https://mh42.cz` → **111 ok, 0 chyb.**
+
+**Validace HTML:** 9 produkčních stránek (všechny veřejné stránky, čtyři poznámky včetně nové a 404)
+přes Nu Html Checker → **0 chyb.**
+
+**Kontrola v headless Chromiu:** světlý i tmavý motiv, 320 / 375 / 800 / 1440 px, bez vodorovného
+posouvání, konzole bez chyb a bez porušení CSP.
+
+**Ověřeno na produkci**
+- Sekce „Teď“ s datem **2026-10-20** a čtyřmi body odpovídajícími skutečnému stavu.
+- Projekty: **HomeLab „v provozu“** (Nexus běží, technologie Linux · Docker · ARM64),
+  **AnimeDB „ve vývoji“** (nasazení na Nexus se připravuje, produkčně tam neběží),
+  **NexusSTAT „ve vývoji“** s odkazem „Zdrojový kód ↗“ na veřejný GitHub a s přístupem
+  „jen domácí síť“ – aplikace sama na Nexusu nasazená není.
+- Nová poznámka `/poznamky/nexus-domaci-server/` → 200, vlastní title, canonical, `og:type=article`;
+  je v `/poznamky/` i mezi třemi nejnovějšími na úvodní stránce.
+- **Atom feed: 4 položky**, unikátní `id`, všechny cílové adresy 200.
+- **Sitemap: 8 adres**, všechny 200, nová poznámka s `lastmod 2026-10-20`.
+- Počasí funguje: výchozí Třebíč vykreslený serverem, hledání „Brno“ přes `/api/mista/` vrátilo
+  kandidáty, výběr zobrazil počasí Brna přes `/api/pocasi/`, „zpět na Třebíč“ obnovilo výchozí místo
+  a vymazalo `localStorage`. Souřadnice v `localStorage` zaokrouhlené na 2 desetinná místa.
+- **Žádné cookies** (`Set-Cookie` na žádné stránce, `document.cookie` prázdné i po změně místa)
+  a **žádné externí požadavky prohlížeče** – všech 64 požadavků v síťovém logu směřovalo na mh42.cz.
+- Bezpečnostní hlavičky beze změny včetně `Permissions-Policy: camera=(), microphone=(),
+  geolocation=(self), payment=(), usb=()`; `X-Powered-By` se neposílá, HSTS stále záměrně není.
+- Statické soubory mají otisk obsahu v adrese, rok a `immutable`; `background.css?v=413161ca43`
+  je na produkci bajtově shodný s balíčkem.
+
+**Opravený kosmetický nález:** na 320 px ve světlém motivu procházela vodorovná čára motivu řádky
+tabulky předpovědi počasí a působila jako podtržení. Tabulka má od v1.3 vlastní ochranné pásmo
+(`public/assets/css/background.css`) stejnou technikou jako dělicí linky. Ověřeno na produkci
+na 320 px ve světlém i tmavém motivu – tabulka je čistá a celkový vzhled pozadí se nezměnil.
+
+**Známá zvláštnost WEDOS** (beze změny proti v1.2): dynamické odpovědi se stavem 200 dostávají
+druhou hlavičku `Cache-Control` – HTML `max-age=300`, JSON z API `max-age=600` (a `Expires`).
+Naše `no-cache` / `no-store` zůstává zachované a má přednost; není to blocker. Kontrola vyhodnocuje
+význam všech výskytů hlavičky, ne jen první.
+
+### Rollback v1.3 → v1.2
+
+Podrobný postup je v `dist/mh42-2026-10-20-2221/NASAZENI-v1.3.md`. Zdroj je balíček v1.2
+`dist/mh42-2026-09-18-2120/A-oddeleny-koren/`, který zůstává nedotčený. Platí stejné pravidlo jako
+při nasazení – **soubor assetu před `config/asset-versions.php`**, jinak by se pod adresou
+`?v=ba8ab97380`, kterou v1.2 používá dál, uložil na rok nový soubor.
+
+1. `content/notes.json` → poznámka zmizí ze seznamů i z úvodní stránky
+2. `public/feed.atom`, `public/sitemap.xml`
+3. `content/projects.json` → NexusSTAT zmizí, HomeLab zpět na „ve výstavbě“
+4. `public/index.php`, `public/o-mne/index.php`
+5. `src/templates/project-row.php`
+6. `public/assets/css/background.css`
+7. `config/asset-versions.php` → přepne CSS zpět
+8. teprve teď smazat `<FTP_ROOT>/www/poznamky/nexus-domaci-server/`
+
+`config/app.php` ani `var/` se rollback netýká – počasí a jeho cache zůstávají nedotčené.
+**Dílčí rollback jen pozadí:** když by vadilo pouze ochranné pásmo u předpovědi, stačí kroky 6 a 7.
 
 ## Stav produkce v1.2
 

@@ -199,7 +199,9 @@ k 2026-10-20. Počasí (Open-Meteo, cache, strop dotazů, geolokace, endpointy) 
 - [x] Pozadí: ochranné pásmo i kolem tabulky předpovědi počasí – nález na 320 px ve světlém
   motivu, kdy čára motivu procházela jejími řádky
 - [x] Veřejné texty bez interních IP adres, cest, mountů, názvů share, kapacit a identifikátorů
-- [ ] Nasazení v1.3 – **zatím neproběhlo**, `docs/nasazeni.md` proto zůstává na stavu v1.2
+- [x] Nasazení na WEDOS (A2 delta, 1 nový + 9 změněných souborů, nic se nemazalo) –
+  v1.3 nasazená 2026-10-20, tag `v1.3.0`, viz `docs/nasazeni.md`. Nasazení webu nemění stav
+  projektů: Nexus běží, AnimeDB ani NexusSTAT na něm produkčně nasazené nejsou
 
 ## Odložený vizuální polish: pozadí
 
