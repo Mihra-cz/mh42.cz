@@ -365,14 +365,62 @@ Zástupné názvy: `<FTP_ROOT>` = kořen FTP účtu webhostingu (na WEDOS tvaru
    `var/` jen vytvořit (od v1.2, zapisovatelná pro PHP) – její obsah se nikdy nenahrává.
    Při každé změně assetů nahrát i `config/asset-versions.php` – jinak zůstanou staré
    adresy (a staré verze v cache).
-4. `python3 tools/overeni-nasazeni.py` – musí skončit bez chyb.
+4. `python3 tools/overeni-nasazeni.py` – musí skončit bez chyb. **Dokud neproběhne úklid
+   styleguide souborů (níže), hlásí nástroj právě jednu známou chybu:**
+   `/assets/css/styleguide.css → 200`.
 5. Cloudflare purge jen cíleně (`favicon.ico`, `og-image.png` – nemají verzi v adrese),
    nikdy „Purge Everything“ jako běžný krok.
+6. Nevyřízený úklid styleguide souborů – postup v sekci níže. Jednorázový, netýká se `var/`.
 
 Rollback: předchozí balíček v `dist/` nahrát stejným postupem; při chybě 500 z `.htaccess`
 přejmenovat `www/.htaccess` na `.htaccess.off`. Návrat v1.1 → v1: postup
 v `dist/mh42-2026-09-18-1856/NASAZENI-v1.1.md`, zdrojem je balíček
 `dist/mh42-v1-2026-09-18-1636/`.
+
+### Nevyřízený úklid: styleguide soubory na produkci
+
+READ-ONLY audit integrity 2026-10-23 (proti balíčku v1.3 `dist/mh42-2026-10-20-2221/`) našel na
+produkci **dva soubory, které žádný balíček nikdy neobsahoval** – `tools/balicek.py:35` je přes
+`PUBLIC_EXCLUDE` záměrně vynechává:
+
+| Na produkci | SHA-256 | Stav |
+|---|---|---|
+| `<FTP_ROOT>/www/styleguide/index.php` | `c164a4b862a1038cecea10996f15e523556be5e4317a895b0487d5ca7fde1010` | bajtově shodný s `2da4a87:public/styleguide/index.php` |
+| `<FTP_ROOT>/www/assets/css/styleguide.css` | `9feee86d3571a98c27da0cb9db56150217a4a756719e43c0178aaf9328f397f5` | bajtově shodný s `2da4a87:public/assets/css/styleguide.css` |
+
+Nejde o kompromitaci – oba sedí bajt po bajtu s repozitářem na produkčním commitu. Na server se
+dostaly mimo delta postup, nejspíš dřívějším uploadem celého `public/`. Zbývá je uklidit, protože:
+
+- `/styleguide/` je sice neškodné (`index.php` se hlídá přes `if (!is_dev()) { not_found(); }`
+  a `config/app.php` má `'env' => 'production'`), ale ochrana stojí **jen** na tom, že se na
+  hostingu nenastaví `APP_ENV=dev`;
+- `styleguide.css` **není** v `config/asset-versions.php`, takže leží na neverzované adrese
+  `/assets/css/styleguide.css` a hosting ho vydává jako běžnou statiku – dnes tedy veřejně
+  dostupný vývojový soubor (nízké riziko, ale zbytečné).
+
+**Nic na produkci nepotřebuje ani jeden z nich** – `styleguide.css` si bere výhradně
+`public/styleguide/index.php` (`'styles' => ['css/styleguide.css']`), žádná jiná stránka na něj
+neodkazuje. Smazání nemůže rozbít vzhled webu.
+
+#### Postup (přidat k dalšímu nasazení, jako poslední krok po kroku 4)
+
+1. **Zálohovat** – stáhnout z FTP `www/styleguide/index.php` a `www/assets/css/styleguide.css`
+   mimo `dist/` (balíček je neměnný artefakt). Obě kopie jsou i v gitu na `2da4a87`, takže záloha
+   je jen pro pohodlí.
+2. Smazat soubor `<FTP_ROOT>/www/assets/css/styleguide.css`.
+3. Smazat soubor `<FTP_ROOT>/www/styleguide/index.php`.
+4. Smazat **prázdný** adresář `<FTP_ROOT>/www/styleguide/`. Kdyby v něm ještě něco bylo, nemazat
+   a nejdřív to prověřit – v balíčku tam nikdy nic jiného nebylo.
+5. `python3 tools/overeni-nasazeni.py` – kontrola `/assets/css/styleguide.css → 404` musí přejít
+   z `CHYBA` na `ok`.
+
+**Čeho se nedržet jako důkazu:** `/styleguide/` vrací 404 i teď, protože `404.php` i zablokovaný
+`styleguide/index.php` volají stejnou `not_found()`. Odpověď je v obou případech totožná, takže
+**přes HTTP nelze rozlišit „smazáno“ od „zablokováno“** – smazání `index.php` potvrdí jedině výpis
+FTP. Externě ověřitelný je proto jen krok 2: `styleguide.css` je statický soubor bez PHP ochrany,
+dnes vrací 200 a po smazání 404.
+
+`var/`, `session/` ani `tmp/` se tento úklid netýká; audit je nestahoval a nic o nich netvrdí.
 
 ---
 

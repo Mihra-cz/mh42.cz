@@ -78,6 +78,16 @@ for path in (f'/neexistuje-{rnd}/', f'/neexistuje-{rnd}.php', f'/neexistuje-{rnd
     status, _, body = fetch(BASE + path)
     report(status == 404 and NOT_FOUND_MARK in body.decode('utf-8', 'replace'), f'{path} → {status}')
 
+# Jen na produkci: lokální vývojový server styleguide záměrně obsluhuje (is_dev() je tam true).
+if not LOCAL:
+    section('Vývojové soubory nesmí na produkci zůstat')
+    # styleguide.css je statická CSS bez PHP ochrany – jediná externě ověřitelná část úklidu
+    # (viz docs/nasazeni.md, „Nevyřízený úklid“). U /styleguide/ to nejde: 404.php i zablokovaný
+    # styleguide/index.php volají stejnou not_found(), odpověď je totožná.
+    status, _, _ = fetch(BASE + '/assets/css/styleguide.css')
+    report(status == 404, f'/assets/css/styleguide.css → {status}'
+           + (' – vývojový soubor je veřejně dostupný, smazat z FTP' if status == 200 else ''))
+
 section('Interní soubory nesmí být dostupné')
 for path in ('/src/', '/src/bootstrap.php', '/src/helpers.php', '/src/templates/page-start.php', '/src/weather.php',
              '/config/', '/config/app.php', '/config/asset-versions.php', '/content/', '/content/projects.json',
