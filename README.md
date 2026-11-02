@@ -20,6 +20,7 @@ public/            kořen webu – jediné, co je dostupné zvenku
   manifest.webmanifest  web app manifest (generovaný)
   api/pocasi/      POST – počasí pro místo zvolené návštěvníkem (JSON)
   api/mista/       POST – hledání místa pro počasí (JSON)
+  api/heartbeat/   POST – přijímač veřejného heartbeatu z NexusSTATu (podepsaný, bez těla v odpovědi)
   styleguide/      přehled tokenů a komponent (jen APP_ENV=dev)
   assets/          CSS, JS, obrázky
 src/
@@ -29,6 +30,7 @@ src/
   projects.php     načtení projektů
   notes.php        načtení poznámek, adresy a data pro Atom
   weather.php      počasí: nastavení, Open-Meteo, cache, hledání místa, formátování
+  heartbeat.php    přijímač heartbeatu: tajemství, podpis, uložení stavu, veřejné zobrazení
   http.php         HTTP GET pro volání API ze serveru (curl, záložně PHP streamy)
   api.php          společné chování JSON endpointů v public/api/
   templates/       hlavička, patička, kostra stránky, řádky seznamů, sekce Počasí
@@ -38,7 +40,9 @@ content/
 config/
   app.php          veřejné nastavení (v gitu)
   local.php        lokální přepsání a tajné hodnoty (mimo git, volitelné)
-var/               běhová data – cache počasí var/weather/ (mimo git, zapisuje PHP)
+  heartbeat.key    sdílené tajemství heartbeatu (mimo git, jen na serveru, chmod 600)
+var/               běhová data (mimo git, zapisuje PHP) – cache počasí var/weather/,
+                   poslední přijatý stav NexusSTATu var/heartbeat/
 docs/              návrh a dokumentace
 tools/             vývojové nástroje, generátory a testy (nejsou součástí webu)
   testdata/        odpovědi Open-Meteo pro testy (bez sítě)
@@ -279,6 +283,80 @@ vrací 404. Bez placeholderu a bez vymyšlených hodnot.
 
 Běžný vývojový server (`php -S …`) volá skutečné Open-Meteo – nejvýš jednou za 15 minut
 pro jedno místo – a cache ukládá do `var/weather/` v repozitáři (git ji ignoruje).
+
+## Stav NexusSTATu (heartbeat)
+
+Na stránce Projekty je u NexusSTATu řádek **stav Nexusu** – jediný údaj, který se
+o domácím serveru zveřejňuje. Vzniká z odchozího podepsaného hlášení, které NexusSTAT
+posílá sám; web nikdy nic nevolá dovnitř domácí sítě a nemá k ní přístup.
+
+**Kontrakt** (určuje ho odesílač v NexusSTATu, `docs/REQUIREMENTS.md`, sekce „Kontrakt
+přijímače heartbeatu“):
+
+| | |
+|---|---|
+| Adresa | `POST /api/heartbeat/` přes HTTPS |
+| Tělo | přesně `{"v":1,"state":"OK","ts":1793000000}`, nejvýš 256 B, jen klíče `v`, `state` a `ts` |
+| Stavy | `OK`, `WARNING`, `ERROR`, `CRITICAL`, `UNKNOWN` |
+| Podpis | `X-NexusSTAT-Signature: v1=<hex>` = HMAC-SHA256 nad **přesnými bajty těla** |
+| Úspěch | `204 No Content` bez těla |
+
+**Jak to funguje**
+
+- Sdílené tajemství je soubor správce mimo veřejný adresář i git (`config/heartbeat.key`,
+  `chmod 600`, aspoň 32 znaků ASCII bez mezer). Bílé znaky na krajích se utínají stejně
+  jako v Pythonu (`bytes.strip()`), takže soubor končící novým řádkem dá na obou stranách
+  stejné bajty. Tajemství ani podpis se nikdy nedostanou do odpovědi, HTML ani logu.
+- Podpis se porovnává v konstantním čase (`hash_equals`). Neplatný podpis je `401`,
+  tělo mimo kontrakt `400`, delší než 256 B `413`, jiná metoda `405`, jiný typ obsahu `415`.
+  Každá odpověď je **prázdná** – z odmítnutí se nedá nic odvodit. Vyčerpaný strop je `429`,
+  nepoužitelné tajemství nebo nezapisovatelná `var/` je `503` (a řádek v logu serveru).
+- `ts` se smí od hodin serveru lišit nejvýš o 300 s a musí být **větší** než u posledního
+  přijatého hlášení; opakovaná a starší zpráva je `409`.
+- Ukládá se jediný soubor `var/heartbeat/state.json` a v něm jen `state`, `ts` a čas přijetí –
+  žádná adresa odesílatele, žádný podpis, žádná historie.
+- **Souběh:** celý úsek „přečti – porovnej `ts` – zapiš“ drží výhradní `flock` na **samostatném
+  stabilním souboru** `var/heartbeat/.lock`, který se nikdy nemaže ani nenahrazuje (otevírá se
+  režimem `c`, takže ho otevření nezkrátí). Dva požadavky se tak nemohou prostřídat a starší
+  hlášení nikdy nepřepíše novější.
+- **Nahrazení stavu:** nový stav se zapíše celý do `var/heartbeat/.state.tmp` a teprve pak se
+  jediným `rename()` přesune na místo. Čtenář proto vidí vždy celý starý, nebo celý nový soubor
+  a **nepotřebuje zámek** – stránku nikdy nezdrží probíhající zápis. Když zápis selže nebo se
+  přeruší, zůstane předchozí platný stav nedotčený; dočasný soubor se uklidí.
+- **Strop požadavků:** 30 za minutu (odesílač potřebuje 1 za 5 minut). Počítadlo je jediný
+  soubor `var/heartbeat/budget.json` se dvěma čísly – žádné IP adresy ani těla.
+- Žádná databáze, žádný cron, žádný další proces. Stav se odvozuje až při načtení stránky.
+
+**Co se zobrazuje**
+
+- Jen celkový stav. Nikdy IP adresy, seznamy služeb, naměřené hodnoty, vnitřní chyby,
+  logy ani administrace. Pod projekty je krátká legenda, co která hodnota znamená
+  (stejná komponenta jako legenda „Přístup“); se zapnutým heartbeatem se vykreslí, jinak ne.
+- Když od posledního platného přijetí uplyne víc než **900 s**, zobrazí se `NO DATA`.
+  Totéž platí pro chybějící, poškozený nebo „budoucí“ soubor stavu: **chyba nikdy
+  neukáže `OK`.**
+- Stránka se stavem posílá `Cache-Control: no-store`, aby zastaralé zelené `OK` nemohl
+  ukázat prohlížeč ani Cloudflare. S vypnutým heartbeatem má stránka původní `no-cache`.
+- Vypnutý přijímač (`'enabled' => false`) vrací na endpointu `404` a na webu se stav
+  vůbec nevykreslí – stejně jako sekce Počasí.
+
+**Testy**
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/app -w /app php:8.3-cli-alpine php tools/test-heartbeat.php
+python3 tools/test-heartbeat.py            # HTTP end-to-end; --nexusstat CESTA
+```
+
+`tools/test-heartbeat.php` běží bez sítě (nastavení, tajemství, podpis, tělo, hodiny,
+pořadí, souběžné zápisy skutečnými procesy, všech pět stavů, NO DATA, strop, stránka).
+`tools/test-heartbeat.py` pouští web ve vestavěném serveru PHP se čtyřmi procesy a tělo
+i podpis skládá **skutečný `nexusstat/heartbeat.py`** z vedlejšího projektu – ověřuje se
+tím i bajtová shoda sdíleného tajemství.
+
+`tools/overeni-nasazeni.py` navíc kontroluje nasazený web zvenku **bez tajemství**: že endpoint
+nikdy nevrátí 2xx na nepodepsané hlášení, že se jeho odpověď necachuje a že `config/heartbeat.key`
+ani soubory ve `var/heartbeat/` nejsou dostupné přes HTTP. Jeden požadavek se započítá do stropu
+a nic neuloží.
 
 ## v1.3 – podzimní aktualizace obsahu
 

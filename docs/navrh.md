@@ -203,6 +203,46 @@ k 2026-10-20. Počasí (Open-Meteo, cache, strop dotazů, geolokace, endpointy) 
   v1.3 nasazená 2026-10-20, tag `v1.3.0`, viz `docs/nasazeni.md`. Nasazení webu nemění stav
   projektů: Nexus běží, AnimeDB ani NexusSTAT na něm produkčně nasazené nejsou
 
+## Stav NexusSTATu (heartbeat) – implementováno, nenasazeno
+
+První uplatnění modelu ze sekce „Domácí data (fáze 2)“: domov data **posílá**, portál si
+pro ně nechodí a do domácí sítě nevidí. Kontrakt je daný odesílačem v NexusSTATu
+(`docs/REQUIREMENTS.md`, „Kontrakt přijímače heartbeatu“), ne tímhle webem. Rozhodnutí:
+
+- Zveřejňuje se **jediný údaj** – celkový stav (`OK`, `WARNING`, `ERROR`, `CRITICAL`,
+  `UNKNOWN`), plus `NO DATA` jako údaj webu. Nikdy IP adresy, seznamy služeb, naměřené
+  hodnoty, vnitřní chyby, logy ani administrace. Seznam povolených hodnot je pevný,
+  cokoli jiného je `NO DATA`.
+- Umístění: řádek „stav Nexusu“ v metadatech projektu NexusSTAT na stránce Projekty, ne
+  na úvodní stránce. Úvodní stránka zůstává osobní web, ne dashboard. Vzhled je stávající
+  „technický list“ – jen hodnota v meta řádku, akcent u závady, tlumeně u `UNKNOWN`
+  a `NO DATA`; žádné semaforové barvy ani nová komponenta.
+- Pod projekty je krátká legenda šesti hodnot (schváleno 2026-11-02). Používá stávající
+  komponentu legendy „Přístup“, takže nepotřebuje žádné nové CSS a nedominuje stránce.
+  Vysvětluje jen, co která hodnota znamená – žádná diagnostika, příčiny ani postupy.
+  Bez zapnutého heartbeatu se nevykreslí.
+- Důvěra stojí na HMAC-SHA256 nad přesnými bajty těla a na sdíleném tajemství v souboru
+  mimo veřejný adresář i git, ne na tom, že adresa endpointu není známá.
+- **Chyba nikdy neukáže `OK`.** Chybějící, poškozený, „budoucí“ i víc než 900 s starý stav
+  je `NO DATA`. Stav se počítá až při načtení stránky z času posledního přijetí, takže
+  zastaralé zelené `OK` nemůže vzniknout ani zaseknutím odesílače.
+- Stránka se stavem posílá `no-store`, aby zastaralý stav nedržel prohlížeč ani Cloudflare.
+- Ukládá se jediný soubor s posledním stavem (`state`, `ts`, čas přijetí). Žádná databáze,
+  žádný cron, žádný další proces, žádná historie a nikdy adresa odesílatele.
+- Souběh řeší `flock` na **samostatném stabilním souboru** `.lock` kolem celého úseku
+  „přečti – porovnej `ts` – zapiš“, takže starší hlášení nikdy nepřepíše novější. Zamykat
+  samotný `state.json` by nestačilo: ten se při každém zápisu vymění za nový soubor, takže
+  by zámek platil pro soubor, který už nikdo nevidí.
+- Stav se nahrazuje přes dočasný soubor a jediný `rename()` (stejně jako cache počasí).
+  Čtenář proto nepotřebuje zámek a stránku nikdy nezdrží probíhající zápis; při přerušeném
+  zápisu zůstane předchozí platný stav nedotčený, místo aby se ztratil přepisem na místě.
+- Vlastní strop 30 požadavků za minutu chrání hosting; počítadlo drží dvě čísla, žádné
+  IP adresy. Vyčerpaný strop je `429`, nevedené počítadlo nebo nečitelné tajemství `503` –
+  provozní chyba se nesmí tvářit jako chyba klienta ani jako úspěch.
+- Výchozí stav je **vypnuto** (`'heartbeat' => ['enabled' => false]`), stejně jako na straně
+  odesílače. Zapnutí je vědomý krok při nasazení; do té doby endpoint vrací 404 a na webu
+  není vidět nic. Produkční tajemství zatím neexistuje.
+
 ## Odložený vizuální polish: pozadí
 
 Až bude základ webu hotový, přibude velmi decentní motiv pozadí inspirovaný elektronikou:

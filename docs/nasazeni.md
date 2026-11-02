@@ -26,6 +26,157 @@ i oběma ZIP archivy; při nálezu balíček označí za nepoužitelný. Nalezen
 **nikdy nemažou automaticky** – ani v pracovním projektu, ani ve starších balíčcích,
 které slouží jako základ rollbacku.
 
+## Připraveno, zatím nenasazeno: přijímač heartbeatu z NexusSTATu
+
+Implementované, otestované a **nenasazené**. Endpoint `POST /api/heartbeat/` přijímá
+podepsané hlášení z NexusSTATu a na stránce Projekty se u NexusSTATu zobrazuje jediný
+údaj – celkový stav. Jak to funguje, je v `README.md` (sekce „Stav NexusSTATu“),
+kontrakt určuje odesílač v NexusSTATu. Zatím se nic nenahrávalo na WEDOS a nic se
+neměnilo v Cloudflare, DNS ani v nastavení hostingu.
+
+**Nové a změněné soubory proti v1.3**
+
+| | Z balíčku `A-oddeleny-koren/…` | Cíl |
+|---|---|---|
+| nový | `public/api/heartbeat/index.php` | `<FTP_ROOT>/www/api/heartbeat/index.php` |
+| nový | `src/heartbeat.php` | `<FTP_ROOT>/src/heartbeat.php` |
+| změna | `src/templates/project-row.php` | `<FTP_ROOT>/src/templates/project-row.php` |
+| změna | `public/projekty/index.php` | `<FTP_ROOT>/www/projekty/index.php` |
+| změna | `public/assets/css/components.css` | `<FTP_ROOT>/www/assets/css/components.css` |
+| změna | `config/asset-versions.php` | `<FTP_ROOT>/config/asset-versions.php` |
+| změna | `config/app.php` | `<FTP_ROOT>/config/app.php` |
+
+Delta se před uploadem vždy odvodí **skutečným porovnáním SHA-256** proti balíčku v1.3,
+ne z tohohle výčtu. Platí obvyklé pořadí: **`components.css` před `config/asset-versions.php`**
+(jinak by se pod novou adresou s `immutable` uložil na rok starý soubor) a **`src/heartbeat.php`
+a endpoint před `public/projekty/index.php`** (stránka ho načítá; bez něj by skončila chybou).
+`config/app.php` jako poslední – teprve ten heartbeat zapne.
+
+**Tajemství – mimo balíček, nahrává se ručně**
+
+`tools/balicek.py` kopíruje z `config/` jedině `app.php`, takže se tajemství do balíčku
+nedostane ani omylem. Vytvořit a nahrát ho je samostatný ruční krok:
+
+```bash
+openssl rand -hex 32 > heartbeat.key      # 64 znaků ASCII, splňuje „aspoň 32 bez mezer“
+```
+
+1. Stejný soubor nahrát na **obě** strany: na WEDOS jako `<FTP_ROOT>/config/heartbeat.key`
+   a na Nexus tam, kam ukazuje `[heartbeat] secret_file` v NexusSTATu.
+2. Na WEDOS nastavit `chmod 600`. Bílé znaky na krajích obě strany utínají stejně,
+   takže na novém řádku na konci souboru nezáleží.
+3. Tajemství nepatří do gitu (`.gitignore` ho má), do dokumentace, do e-mailu ani do
+   příkazu s historií. Při podezření na únik stačí vyměnit soubor na obou stranách.
+4. **Produkční tajemství ještě neexistuje** – testy používají vlastní dočasné.
+
+**Fáze 1 – nahrát kód s vypnutým přijímačem**
+
+`enabled => false` zůstává i po nahrání. Dokud se přijímač nezapne, endpoint vrací 404
+a na webu se nemění vůbec nic – stránka Projekty vypadá jako dnes, bez řádku „stav Nexusu“
+a bez legendy. Tím se oddělí nasazení souborů od spuštění funkce.
+
+1. Sestavit balíček (`python3 tools/balicek.py`), ověřit čistotu (`--kontrola`)
+   a odvodit delta skutečným porovnáním SHA-256 proti balíčku v1.3.
+2. Nahrát soubory v pořadí výše **včetně `config/app.php`** – v něm je `'enabled' => false`.
+3. Nahrát `config/heartbeat.key` mimo webroot (`<FTP_ROOT>/config/`, ne `www/`) a dát mu `chmod 600`.
+4. Projít kontrolu oprávnění níže.
+
+**Fáze 2 – ověření oprávnění (bez zapnutí přijímače)**
+
+PHP na WEDOS běží pod účtem webhostingu, takže `chmod 600` na `config/heartbeat.key` je
+zároveň soukromé i čitelné pro PHP. Ověřit se to ale musí doopravdy – na notebooku to
+zjistit nejde. Všechny kontroly jsou **neinvazivní**: nic se nenahrává navíc a nic se nemaže.
+
+Přes FTP (autor, jen čtení):
+
+| Co | Očekávané |
+|---|---|
+| Umístění `config/heartbeat.key` | `<FTP_ROOT>/config/`, tedy **mimo** `www/` |
+| Oprávnění klíče | `600` (vlastník čte a zapisuje, skupina ani ostatní nic) |
+| Vlastník klíče | účet webhostingu, pod kterým běží PHP |
+| Obsah klíče | jeden řádek, aspoň 32 znaků ASCII bez mezer |
+| `<FTP_ROOT>/var/` | existuje, zapisovatelná (na produkci **755**, stejně jako pro počasí) |
+| `<FTP_ROOT>/var/heartbeat/` | **nezakládat ručně** – PHP si ji vytvoří při prvním požadavku |
+
+Přes HTTPS (spustí Claude, bez tajemství a bez zápisu):
+
+```bash
+python3 tools/overeni-nasazeni.py https://mh42.cz
+```
+
+Sekce „Heartbeat NexusSTATu“ ověří, že `config/heartbeat.key`, `config/local.php`
+a soubory ve `var/heartbeat/` (`state.json`, `.lock`, `budget.json`) **nejsou dostupné přes
+HTTP** (404/403), že endpoint na nepodepsané hlášení nikdy nevrátí 2xx a že se jeho odpověď
+necachuje. Se zapnutým i vypnutým přijímačem; pozná se to podle stavových kódů
+(405/401 zapnutý, 404 vypnutý). Jedno nepodepsané hlášení se započítá do stropu
+a nic neuloží.
+
+**Jak se pozná chyba oprávnění, až se přijímač zapne:** podepsané hlášení skončí **503**,
+nikdy úspěchem. Rozlišit se dá podle řádku v logu PHP – `soubor se sdíleným tajemstvím
+chybí nebo není obyčejný soubor`, `… nejde přečíst – zkontroluj oprávnění`, `sdílené
+tajemství musí být aspoň 32 znaků ASCII bez mezer`, `složku pro stav nejde vytvořit`,
+`zámek stavu nejde otevřít` nebo `stav nejde zapsat`. **Žádný z nich neobsahuje tajemství,
+podpis ani tělo požadavku.** Když je klíč čitelný, ale má jiné bajty než na Nexusu, je
+odpověď **401**, ne 503.
+
+**Fáze 3 – řízené testovací okno (zapnutí přijímače)**
+
+Teprve tady se mění chování veřejného webu. Odesílač na Nexusu zůstává **vypnutý**;
+hlášení se posílají ručně z notebooku na skutečnou veřejnou adresu.
+
+1. Nahrát `config/app.php` s `'heartbeat' => ['enabled' => true, …]`. Jiný soubor se nemění.
+2. Poslat podepsané hlášení na `https://mh42.cz/api/heartbeat/` a ověřit:
+
+   | Požadavek | Očekávané |
+   |---|---|
+   | platné podepsané hlášení | **204**, prázdné tělo |
+   | totéž hlášení podruhé (stejné `ts`) | **409** |
+   | hlášení se starším `ts` | **409** |
+   | chybný podpis | **401** |
+   | `GET /api/heartbeat/` | **405**, `Allow: POST` |
+   | jiný `Content-Type` | **415** |
+   | tělo nad 256 B | **413** |
+   | `ts` mimo ±300 s | **400** |
+
+3. `/projekty/` ukazuje u NexusSTATu řádek „stav Nexusu“ s přijatým stavem, pod projekty
+   je legenda šesti hodnot a stránka posílá `Cache-Control: no-store`.
+4. Přes FTP ověřit, že `var/heartbeat/state.json` obsahuje jen `version`, `state`, `ts`
+   a `received_at` – žádnou adresu odesílatele ani podpis – a že vedle něj je `.lock`
+   a `budget.json`, ale **žádný zbylý `.state.tmp`**.
+5. Počkat 15 minut bez dalšího hlášení a ověřit, že se stav přepne na **NO DATA**,
+   ne na zelené `OK`.
+6. **Při jakémkoli neúspěchu** vrátit `config/app.php` s `'enabled' => false` (endpoint
+   zase vrací 404, stav i legenda ze stránky zmizí) a na Nexusu **nic nezapínat**.
+
+**Fáze 4 – po úspěšném ověření**
+
+Rozhodnout, jestli přijímač zůstane zapnutý. Zapnutí odesílače na Nexusu
+(`[heartbeat] enabled = true`, adresa `https://mh42.cz/api/heartbeat/`) je **samostatné
+nasazení se samostatným schválením**, ne součást tohohle kroku.
+
+**Cloudflare a cache**
+
+Nic se předem nemění – **žádná preventivní výjimka ve WAF, žádná změna DNS ani cache**.
+
+- `POST` se v Cloudflare necachuje a endpoint vrací 204 bez těla, takže není co uložit.
+  Každá odpověď přijímače nese `Cache-Control: no-store`.
+- Stránka se stavem posílá `no-store`, takže zastaralé zelené `OK` nemůže podržet prohlížeč
+  ani Cloudflare. WEDOS k dynamickým odpovědím přidává vlastní `max-age` – rozhoduje význam
+  **všech** výskytů hlavičky, ne pořadí (`tools/hlavicky.py`).
+- Ověřit ve fázi 3 na skutečné adrese: `cf-cache-status` u `/projekty/` nesmí být `HIT`,
+  dvě načtení po sobě s různým stavem musí vrátit různé HTML, a `cf-cache-status`
+  u odpovědi endpointu nesmí být `HIT`.
+- **Pokud Cloudflare podepsaný POST zablokuje** (403/503 s chybovou stránkou Cloudflare
+  místo prázdné odpovědi): nejdřív v Cloudflare zjistit **konkrétní pravidlo** (Security
+  → Events, ray ID z odpovědi). Teprve podle něj se rozhodne o co nejužší výjimce – jen
+  pro cestu `/api/heartbeat/` a jen pro to jedno pravidlo. Nic plošného, nic „pro jistotu“.
+
+**Rollback**: vrátit `config/app.php` z balíčku v1.3 (tím se heartbeat vypne – endpoint
+začne vracet 404 a stav i legenda ze stránky zmizí), pak případně `public/projekty/index.php`,
+`src/templates/project-row.php`, `components.css` a `config/asset-versions.php`.
+`src/heartbeat.php` ani endpoint se mazat nemusí; bez zapnutého nastavení nic nedělají.
+Soubor `config/heartbeat.key` smazat jen při skutečném odstranění funkce.
+
 ## Stav produkce v1.3
 
 | | |

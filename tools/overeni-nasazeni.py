@@ -14,7 +14,7 @@ Spuštění:
 import hashlib, json, re, secrets, struct, sys, time, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
-from hlavicky import api_cache_ok, cache_text, html_cache_ok, static_cache_ok
+from hlavicky import api_cache_ok, cache_directives, cache_text, html_cache_ok, static_cache_ok
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from xml.dom import minidom
@@ -290,6 +290,33 @@ if not LOCAL:
                f'{url} → {" → ".join(chain)} → {current}')
     _, headers, _ = fetch(BASE + '/')
     report(True, f'server: {headers.get("Server")}, cf-cache-status HTML: {headers.get("cf-cache-status")}', info=True)
+
+section('Heartbeat NexusSTATu')
+# Neinvazivní: bez tajemství, bez podepsaného hlášení a bez jediného zápisu na server.
+# Funguje stejně se zapnutým i vypnutým přijímačem – pozná se podle stavových kódů.
+hb = BASE + '/api/heartbeat/'
+status, headers, body = fetch(hb)
+hb_on = status != 404
+report(status in (404, 405) and body == b'',
+       f'GET {hb} → {status} ({"přijímač zapnutý" if hb_on else "přijímač vypnutý"}), prázdné tělo')
+if hb_on:
+    report(headers.get('Allow') == 'POST', f'GET nabízí Allow: POST ({headers.get("Allow")})')
+
+# Nepodepsané hlášení nesmí nikdy projít. Spotřebuje jeden požadavek ze stropu, nic neuloží.
+status, headers, body = fetch(hb, b'{"v":1,"state":"OK","ts":1}',
+                              {'Content-Type': 'application/json', 'X-NexusSTAT-Signature': 'v1=' + '0' * 64})
+report(status in (401, 404) and body == b'',
+       f'POST s chybným podpisem → {status}, prázdné tělo (nikdy 2xx)')
+report('no-store' in cache_directives(headers),
+       f'odpověď přijímače se necachuje: {cache_text(headers)}')
+
+# Soukromé soubory nesmí být dostupné přes HTTP – ani ve variantě A, ani kdyby se
+# aplikace ocitla uvnitř webrootu (varianta B).
+for path in ('/config/heartbeat.key', '/config/local.php', '/var/heartbeat/state.json',
+             '/var/heartbeat/.lock', '/var/heartbeat/budget.json', '/var/weather/budget.json'):
+    status, _, body = fetch(BASE + path)
+    report(status in (403, 404) and b'heartbeat' not in body.lower()[:200],
+           f'{path} není veřejně dostupný → {status}')
 
 section('Cookies')
 report(not cookies, 'žádné Set-Cookie' if not cookies else 'NEČEKANÉ COOKIES: ' + '; '.join(cookies))

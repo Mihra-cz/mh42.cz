@@ -1,6 +1,8 @@
 <?php
 /** @var array $project */
+/** @var ?string $state  Veřejný stav z heartbeatu NexusSTATu; null = nezobrazuje se. */
 
+$state = $state ?? null;
 $tech = $project['tech'] ?? [];
 $link = $project['link'] ?? null;
 // Odkaz mimo web se značí stejně jako jinde na webu: třída ext (šipka ↗, v tisku adresa).
@@ -14,6 +16,9 @@ $linkClass = $link !== null && preg_match('~^https?://~i', $link['href']) === 1 
             <div><dt>stav</dt><dd><?= e(project_status_label($project['status'])) ?></dd></div>
 <?php if (isset($project['access'])): ?>
             <div><dt>přístup</dt><dd><?= e(project_access_label($project['access'])) ?></dd></div>
+<?php endif; ?>
+<?php if ($state !== null): ?>
+            <div><dt>stav Nexusu</dt><dd class="<?= e(heartbeat_state_class($state)) ?>"><?= e($state) ?></dd></div>
 <?php endif; ?>
 <?php if ($tech !== []): ?>
             <div><dt>technologie</dt><dd><?= e(implode(' · ', $tech)) ?></dd></div>

@@ -24,6 +24,19 @@ return [
         ['key' => 'poznamky', 'label' => 'Poznámky', 'href' => '/poznamky/'],
     ],
 
+    // Veřejný heartbeat z NexusSTATu (src/heartbeat.php, endpoint /api/heartbeat/).
+    // Na webu se ukazuje jedině celkový stav u projektu 'project' na stránce Projekty.
+    // enabled false = endpoint vrací 404 a stav se nikde nezobrazuje.
+    // Sdílené tajemství je soubor správce mimo veřejný adresář i Git (chmod 600);
+    // relativní cesty se berou od kořene aplikace. Postup je v docs/nasazeni.md.
+    'heartbeat' => [
+        'enabled'       => false,
+        'secret_file'   => 'config/heartbeat.key',
+        'state_dir'     => 'var/heartbeat',
+        'project'       => 'nexusstat',
+        'require_https' => true,
+    ],
+
     // Počasí na úvodní stránce – data z Open-Meteo načítá server (src/weather.php).
     // Výchozí místo je veřejné centrum města, ne adresa bydliště. Když je enabled false
     // nebo chybí název či souřadnice, sekce se vůbec nevykreslí.

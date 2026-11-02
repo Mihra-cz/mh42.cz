@@ -99,6 +99,11 @@
 .project__meta div { display: flex; gap: 0.5em; }
 .project__meta dd { color: var(--text); }
 
+/* Veřejný stav z heartbeatu NexusSTATu – závada akcentem, neznámý stav tlumeně.
+   Selektor musí být specifičtější než .project__meta dd výše, jinak by barvu přebil. */
+.project__meta .project__state--problem { color: var(--accent); }
+.project__meta .project__state--unknown { color: var(--muted); }
+
 /* ---------- Legenda ---------- */
 
 .legend__intro { margin-bottom: 1.25rem; color: var(--muted); }
